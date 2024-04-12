@@ -1,0 +1,18 @@
+## Server
+server:
+  port: 9001
+
+## MySQL
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/twitter?serverTimezone=UTC&useLegacyDatetimeCode=false
+    username: root
+    password: passw
+
+ums:
+  host: http://localhost
+  port: 9000
+  paths:
+    user: /users/user
+

@@ -1,0 +1,11 @@
+## Server
+server:
+  port: 9000
+
+## MySQL
+spring:
+  datasource:
+    driverClassName: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://0.0.0.0:3306/ums?serverTimezone=UTC&useLegacyDatetimeCode=false
+    username: root
+    password: passw
