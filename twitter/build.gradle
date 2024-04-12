@@ -9,7 +9,7 @@ java {
     sourceCompatibility = JavaVersion.VERSION_17
 }
 
-group = 'org.cst8277.twitter'
+group = 'com.ziminpro.twitter'
 version = '1.2'
 
 configurations {

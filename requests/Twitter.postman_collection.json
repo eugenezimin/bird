@@ -1,0 +1,246 @@
+{
+	"info": {
+		"_postman_id": "68f2ad43-9d8a-4e25-b349-f2faa6fba4f9",
+		"name": "TwitterClone",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Get All Messages for Producer",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/messages/producer/6e27ea06-a716-4c89-af88-813749a8bd48",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"messages",
+						"producer",
+						"6e27ea06-a716-4c89-af88-813749a8bd48"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get All Messages for Subscriber",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/messages/subscriber/70A64B54-43C3-4C18-BBEC-64590FF7E0CC",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"messages",
+						"subscriber",
+						"70A64B54-43C3-4C18-BBEC-64590FF7E0CC"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Subscription for Subscriber",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/subscriptions/subscriber/70A64B54-43C3-4C18-BBEC-64590FF7E0CC",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"subscriptions",
+						"subscriber",
+						"70A64B54-43C3-4C18-BBEC-64590FF7E0CC"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create New Message",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"author\": \"1CD89E11-602A-4186-AFBF-E0149B59EB08\",\n    \"content\": \"Mr. Macron would like to say hello!\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/messages/message",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"messages",
+						"message"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create New Subscription",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"subscriber\": \"70A64B54-43C3-4C18-BBEC-64590FF7E0CC\",\n    \"producers\": [\n        \"1CD89E11-602A-4186-AFBF-E0149B59EB08\",\n        \"6E27EA06-A716-4C89-AF88-813749A8BD48\"\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/subscriptions",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"subscriptions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Subscription for Subscriber",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"subscriber\": \"70A64B54-43C3-4C18-BBEC-64590FF7E0CC\",\n    \"producers\": [\n        \"1CD89E11-602A-4186-AFBF-E0149B59EB08\"\n    ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/subscriptions",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"subscriptions"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Subscription",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/subscriptions/subscriber/70A64B54-43C3-4C18-BBEC-64590FF7E0CC",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"subscriptions",
+						"subscriber",
+						"70A64B54-43C3-4C18-BBEC-64590FF7E0CC"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Message",
+			"request": {
+				"method": "DELETE",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "localhost:9001/messages/message/29F484AA-638E-4A9F-97CF-ACF2F33ACEF7",
+					"host": [
+						"localhost"
+					],
+					"port": "9001",
+					"path": [
+						"messages",
+						"message",
+						"29F484AA-638E-4A9F-97CF-ACF2F33ACEF7"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"protocolProfileBehavior": {}
+}

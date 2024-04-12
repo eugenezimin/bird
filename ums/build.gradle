@@ -9,7 +9,7 @@ java {
     sourceCompatibility = JavaVersion.VERSION_17
 }
 
-group = 'org.cst8277.ums'
+group = 'com.ziminpro.ums'
 version = '1.2'
 
 configurations {
