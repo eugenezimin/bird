@@ -65,3 +65,17 @@ To build the project, follow the steps below.
 
 ### Verify How It Works
 As a result you should have 2 separate services running on your local machine using ports `9000` and `9001` accordingly. Import Postman collections from the `requests` folder into your Postman/Hopscotch/Insomnia client to check how it works.
+
+## Contributing 
+Contributions to this repository are welcome! If you would like to add a new code or improve an existing one, please follow these steps: 
+1. Fork the repository. 
+2. Create a new branch for your changes: `git checkout -b my-new-branch` 
+3. Add your article or make changes to an existing one. 
+4. Commit your changes: `git commit -m "Add new code"` 
+5. Push your changes to your forked repository: `git push origin my-new-branch` 
+6. Open a pull request in this repository, describing your changes. 
+
+Please ensure that your article is well-written, accurate, and includes relevant comments. 
+
+## License 
+This repository is licensed under the [BSD 2-Clause License](LICENSE).
