@@ -1,16 +1,17 @@
 plugins {
-	id 'org.springframework.boot' version '3.2.4'
-	id 'io.spring.dependency-management' version '1.1.4'
+    id 'org.springframework.boot' version '3.5.7'
+    id 'io.spring.dependency-management' version '1.1.7'
 	id 'java'
 	id 'maven-publish'
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
 }
 
 group = 'com.ziminpro.ums'
-version = '1.2'
+version = '1.3'
 
 configurations {
 	compileOnly {
@@ -25,7 +26,7 @@ repositories {
 }
 
 dependencies {
-	implementation 'mysql:mysql-connector-java:8.0.32'
+	implementation 'mysql:mysql-connector-java:8.0.33'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 	compileOnly 'org.projectlombok:lombok'
