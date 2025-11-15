@@ -21,7 +21,7 @@ public class JdbcSupsriptionRepository implements SubscriptionRepository {
     @Override
     public boolean createSubscription(Subscription subscription) {
         if (subscription.getSubscriber() == null || subscription.getProducers() == null
-                || subscription.getProducers().size() == 0
+                || subscription.getProducers().isEmpty()
                 || this.createSubscriber(subscription.getSubscriber()) == null)
             return false;
 
@@ -48,15 +48,15 @@ public class JdbcSupsriptionRepository implements SubscriptionRepository {
     public Subscription getSubscription(UUID subscriberId) {
         List<Subscription> subscriptions = jdbcTemplate.query(Constants.GET_SUBSCRIPTION,
                 (rs, rowNum) -> new Subscription(DaoHelper.bytesArrayToUuid(rs.getBytes("subscriptions.subscriber_id")),
-                        Arrays.asList(DaoHelper.bytesArrayToUuid(rs.getBytes("subscriptions.producer_id")))),
+		                List.of(DaoHelper.bytesArrayToUuid(rs.getBytes("subscriptions.producer_id")))),
                 subscriberId.toString());
 
         Subscription subscription = new Subscription();
-        for (Object oSubscriptions : subscriptions) {
+        for (Subscription oSubscriptions : subscriptions) {
             if (subscription.getSubscriber() == null) {
-                subscription.setSubscriber(((Subscription) oSubscriptions).getSubscriber());
+                subscription.setSubscriber(oSubscriptions.getSubscriber());
             }
-            subscription.addProducer(((Subscription) oSubscriptions).getProducers().get(0));
+            subscription.addProducer(oSubscriptions.getProducers().getFirst());
         }
         // better to return empty message instead of null (for automatic processing)
         return subscription;
