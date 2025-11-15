@@ -1,6 +1,5 @@
 package com.ziminpro.twitter.dao;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 

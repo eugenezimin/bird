@@ -26,7 +26,7 @@ public class JdbcMessageRepository implements MessageRepository {
                 messageId.toString());
 
         // better to return empty message instead of null (for automatic processing)
-        return Optional.ofNullable(messages.get(0)).orElse(new Message());
+        return Optional.ofNullable(messages.getFirst()).orElse(new Message());
     }
 
     @Override
@@ -37,7 +37,7 @@ public class JdbcMessageRepository implements MessageRepository {
                         rs.getString("messages.content"), rs.getLong("messages.created")),
                 prodicerId.toString());
 
-        return Optional.ofNullable(messages).orElse(new ArrayList<>());
+        return Optional.of(messages).orElse(new ArrayList<>());
     }
 
     @Override
@@ -47,7 +47,7 @@ public class JdbcMessageRepository implements MessageRepository {
                         DaoHelper.bytesArrayToUuid(rs.getBytes("messages.producer_id")),
                         rs.getString("messages.content"), rs.getLong("messages.created")),
                 subscriberId.toString());
-        return Optional.ofNullable(messages).orElse(new ArrayList<>());
+        return Optional.of(messages).orElse(new ArrayList<>());
     }
 
     @Override
