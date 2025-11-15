@@ -1,6 +1,6 @@
 package com.ziminpro.twitter.services;
 
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -24,9 +24,7 @@ public class UMSConnector {
         WebClient client = WebClient.builder().baseUrl(uriUmsHost + ":" + uriUmsPort)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE).build();
 
-        Mono<Object> response = client.method(HttpMethod.GET).uri(uri).accept(MediaType.APPLICATION_JSON)
-                .acceptCharset(Charset.forName("UTF-8")).retrieve().bodyToMono(Object.class);
-
-        return response;
+	    return client.method(HttpMethod.GET).uri(uri).accept(MediaType.APPLICATION_JSON)
+	            .acceptCharset(StandardCharsets.UTF_8).retrieve().bodyToMono(Object.class);
     }
 }
