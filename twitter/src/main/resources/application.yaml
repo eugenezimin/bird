@@ -1,18 +1,29 @@
-## Server
 server:
-  port: 9001
+  port: 9000
 
-## MySQL
 spring:
   datasource:
     driverClassName: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/twitter?serverTimezone=UTC&useLegacyDatetimeCode=false
+    url: jdbc:mysql://127.0.0.1:3306/ums?serverTimezone=UTC&useLegacyDatetimeCode=false
     username: root
     password: passw
 
-ums:
-  host: http://localhost
-  port: 9000
-  paths:
-    user: /users/user
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          github:
+            client-id: your-github-client-id
+            client-secret: your-github-client-secret
+            scope: read:user
+        provider:
+          github:
+            authorization-uri: https://github.com/login/oauth/authorize
+            token-uri: https://github.com/login/oauth/access_token
+            user-info-uri: https://api.github.com/user
+            user-name-attribute: login
 
+jwt:
+  secret: "supersecretkey123"
+  expiration: 3600000   # 1 hour in milliseconds
