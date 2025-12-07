@@ -1,0 +1,40 @@
+package com.ziminpro.ums.controller;
+
+import com.ziminpro.ums.model.User;
+import com.ziminpro.ums.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@RestController
+public class OAuthController {
+
+    @Autowired
+    private UserService userService;
+
+    @GetMapping("/login/oauth2/code/github")
+    public Map<String, String> githubLogin(@AuthenticationPrincipal OAuth2User oauthUser) {
+        // Get GitHub username/email from OAuth2User
+        String username = oauthUser.getAttribute("login"); // GitHub login name
+        String email = oauthUser.getAttribute("email");
+
+        // Create a User object (or retrieve existing)
+        User user = new User();
+        user.setUsername(username);
+        user.setEmail(email);
+
+        // Generate token
+        String token = userService.generateToken(user);
+
+        // Return token to client
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        response.put("username", username);
+        return response;
+    }
+}
