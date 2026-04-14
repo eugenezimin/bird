@@ -1,40 +1,89 @@
+// ================================================================
+// twitter/build.gradle
+// Spring Boot 4.0.5  |  Gradle 9.4.1  |  JDK 25
+// ================================================================
+
 plugins {
-	id 'org.springframework.boot' version '3.5.7'
-	id 'io.spring.dependency-management' version '1.1.7'
-	id 'java'
-	id 'maven-publish'
+    id 'org.springframework.boot'        version '4.0.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'java'
 }
 
+// ---------------------------------------------------------------------------
+// Project coordinates
+// ---------------------------------------------------------------------------
+group   = 'com.ziminpro.twitter'
+version = '2.0'
+
+// ---------------------------------------------------------------------------
+// Java toolchain — pins the exact JDK release used for compilation,
+// javadoc, and test execution regardless of what JAVA_HOME points at.
+// ---------------------------------------------------------------------------
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+        vendor          = JvmVendorSpec.ORACLE
+    }
 }
 
-group = 'com.ziminpro.twitter'
-version = '1.3'
-
-configurations {
-	compileOnly {
-		extendsFrom annotationProcessor
-	}
-}
-
+// ---------------------------------------------------------------------------
+// Repositories
+// ---------------------------------------------------------------------------
 repositories {
-	mavenCentral()
-	maven { url 'https://repo.spring.io/milestone' }
-	maven { url 'https://repo.spring.io/snapshot' }
+    mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }
+    maven { url 'https://repo.spring.io/snapshot' }
+}
+
+// ---------------------------------------------------------------------------
+// Dependencies
+//
+// MySQL connector:
+//   Old (Boot ≤ 2.x):  mysql:mysql-connector-java
+//   New (Boot 3+/4):   com.mysql:mysql-connector-j   ← version managed by BOM
+// ---------------------------------------------------------------------------
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
 }
 
 dependencies {
-	implementation 'mysql:mysql-connector-java:8.0.33'
-	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'org.springframework.boot:spring-boot-starter-webflux'
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'io.projectreactor:reactor-test'
+    // --- Web (reactive) ---
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
+    // --- Database ---
+    implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // New Maven coordinates since Spring Boot 3 — version managed by BOM
+    runtimeOnly    'com.mysql:mysql-connector-j'
+
+    // --- JSON / Java Time ---
+    // Required for LocalDateTime serialization (JavaTimeModule).
+    // Version managed by the Spring Boot BOM.
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+
+    // --- Lombok (compile-time only) ---
+    compileOnly         'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // --- Testing ---
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'io.projectreactor:reactor-test'
 }
 
-test {
-	useJUnitPlatform()
+// ---------------------------------------------------------------------------
+// Test
+// ---------------------------------------------------------------------------
+tasks.named('test') {
+    useJUnitPlatform()
+    jvmArgs '--enable-preview'
+}
+
+// ---------------------------------------------------------------------------
+// Compiler options
+// ---------------------------------------------------------------------------
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.compilerArgs << '--enable-preview'
+    options.encoding = 'UTF-8'
 }

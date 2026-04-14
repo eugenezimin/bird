@@ -1,9 +1,5 @@
 package com.ziminpro.twitter.services;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-
 import com.ziminpro.twitter.dao.SubscriptionRepository;
 import com.ziminpro.twitter.dtos.Constants;
 import com.ziminpro.twitter.dtos.HttpResponseExtractor;
@@ -18,6 +14,10 @@ import org.springframework.stereotype.Service;
 
 import reactor.core.publisher.Mono;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+
 @Service
 public class SubscriptionsService {
 
@@ -30,94 +30,114 @@ public class SubscriptionsService {
     @Value("${ums.paths.user}")
     private String uriUser;
 
-    Map<String, Object> response = new HashMap<>();
+    // ----------------------------------------------------------------
+    // Public API
+    // ----------------------------------------------------------------
 
     public Mono<ResponseEntity<Map<String, Object>>> getSubscriptionsForSubscriberById(UUID subscriberId) {
-        return umsConnector.retrieveUmsData(uriUser + "/" + subscriberId.toString()).flatMap(res -> {
-            Subscription subscriptions = new Subscription();
-            User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
+        return umsConnector.retrieveUmsData(uriUser + "/" + subscriberId)
+            .flatMap(res -> {
+                Map<String, Object> response = new HashMap<>();
+                User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
 
-            if (user.hasRole(Roles.SUBSCRIBER)) {
-                subscriptions = subscriptionRepository.getSubscription(subscriberId);
-            }
-            if (subscriptions.getSubscriber() == null) {
-                response.put(Constants.CODE, "404");
-                response.put(Constants.MESSAGE,
-                        "Subscriptions for user with ID " + subscriberId.toString() + " is not found");
-                response.put(Constants.DATA, subscriptions);
-            } else {
-                response.put(Constants.CODE, "201");
-                response.put(Constants.MESSAGE, "Subscriptions have been retrieved");
-                response.put(Constants.DATA, subscriptions);
-            }
-            return Mono.just(ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, Constants.APPLICATION_JSON)
-                    .header(Constants.ACCEPT, Constants.APPLICATION_JSON).body(response));
-        });
+                Subscription subscription = new Subscription();
+                if (user.hasRole(Roles.SUBSCRIBER)) {
+                    subscription = subscriptionRepository.getSubscription(subscriberId);
+                }
+
+                if (subscription.getSubscriber() == null) {
+                    response.put(Constants.CODE,    "404");
+                    response.put(Constants.MESSAGE, "No subscription found for user " + subscriberId);
+                    response.put(Constants.DATA,    subscription);
+                } else {
+                    response.put(Constants.CODE,    "200");
+                    response.put(Constants.MESSAGE, "Subscription retrieved successfully");
+                    response.put(Constants.DATA,    subscription);
+                }
+                return Mono.just(jsonOk(response));
+            });
     }
 
     public Mono<ResponseEntity<Map<String, Object>>> createSubscription(Subscription subscription) {
-        return umsConnector.retrieveUmsData(uriUser + "/" + subscription.getSubscriber().toString()).flatMap(res -> {
-            boolean subscriptionId = false;
-            User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
+        return umsConnector.retrieveUmsData(uriUser + "/" + subscription.getSubscriber())
+            .flatMap(res -> {
+                Map<String, Object> response = new HashMap<>();
+                User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
 
-            if (user.hasRole(Roles.SUBSCRIBER)) {
-                subscriptionId = subscriptionRepository.createSubscription(subscription);
-            }
-            if (!subscriptionId) {
-                response.put(Constants.CODE, "500");
-                response.put(Constants.MESSAGE, "Subscriptions has not been created");
-                response.put(Constants.DATA, false);
-            } else {
-                response.put(Constants.CODE, "200");
-                response.put(Constants.MESSAGE, "Subscription has been created");
-                response.put(Constants.DATA, true);
-            }
-            return Mono.just(ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, Constants.APPLICATION_JSON)
-                    .header(Constants.ACCEPT, Constants.APPLICATION_JSON).body(response));
-        });
+                boolean created = false;
+                if (user.hasRole(Roles.SUBSCRIBER)) {
+                    created = subscriptionRepository.createSubscription(subscription);
+                }
+
+                if (!created) {
+                    response.put(Constants.CODE,    "500");
+                    response.put(Constants.MESSAGE, "Subscription could not be created — subscriber must have SUBSCRIBER role");
+                    response.put(Constants.DATA,    false);
+                } else {
+                    response.put(Constants.CODE,    "201");
+                    response.put(Constants.MESSAGE, "Subscription created successfully");
+                    response.put(Constants.DATA,    true);
+                }
+                return Mono.just(jsonOk(response));
+            });
     }
 
     public Mono<ResponseEntity<Map<String, Object>>> updateSubscriptionForSubscriberById(Subscription subscription) {
-        return umsConnector.retrieveUmsData(uriUser + "/" + subscription.getSubscriber().toString()).flatMap(res -> {
-            boolean subscriptionId = false;
-            User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
+        return umsConnector.retrieveUmsData(uriUser + "/" + subscription.getSubscriber())
+            .flatMap(res -> {
+                Map<String, Object> response = new HashMap<>();
+                User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
 
-            if (user.hasRole(Roles.SUBSCRIBER)) {
-                subscriptionId = subscriptionRepository.updateSubscription(subscription);
-            }
-            if (!subscriptionId) {
-                response.put(Constants.CODE, "500");
-                response.put(Constants.MESSAGE, "Subscription has not been updated");
-                response.put(Constants.DATA, false);
-            } else {
-                response.put(Constants.CODE, "201");
-                response.put(Constants.MESSAGE, "Subscription has been updated");
-                response.put(Constants.DATA, true);
-            }
-            return Mono.just(ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, Constants.APPLICATION_JSON)
-                    .header(Constants.ACCEPT, Constants.APPLICATION_JSON).body(response));
-        });
+                boolean updated = false;
+                if (user.hasRole(Roles.SUBSCRIBER)) {
+                    updated = subscriptionRepository.updateSubscription(subscription);
+                }
+
+                if (!updated) {
+                    response.put(Constants.CODE,    "500");
+                    response.put(Constants.MESSAGE, "Subscription could not be updated");
+                    response.put(Constants.DATA,    false);
+                } else {
+                    response.put(Constants.CODE,    "200");
+                    response.put(Constants.MESSAGE, "Subscription updated successfully");
+                    response.put(Constants.DATA,    true);
+                }
+                return Mono.just(jsonOk(response));
+            });
     }
 
     public Mono<ResponseEntity<Map<String, Object>>> deleteSubscriptionForSubscriberById(UUID subscriberId) {
-        return umsConnector.retrieveUmsData(uriUser + "/" + subscriberId.toString()).flatMap(res -> {
-            boolean subscriptionId = false;
-            User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
+        return umsConnector.retrieveUmsData(uriUser + "/" + subscriberId)
+            .flatMap(res -> {
+                Map<String, Object> response = new HashMap<>();
+                User user = HttpResponseExtractor.extractDataFromHttpClientResponse(res, User.class);
 
-            if (user.hasRole(Roles.SUBSCRIBER)) {
-                subscriptionId = subscriptionRepository.deleteSubscription(subscriberId);
-            }
-            if (!subscriptionId) {
-                response.put(Constants.CODE, "500");
-                response.put(Constants.MESSAGE, "Subscription has not been deleted");
-                response.put(Constants.DATA, false);
-            } else {
-                response.put(Constants.CODE, "201");
-                response.put(Constants.MESSAGE, "Subscription has been deleted");
-                response.put(Constants.DATA, true);
-            }
-            return Mono.just(ResponseEntity.ok().header(HttpHeaders.CONTENT_TYPE, Constants.APPLICATION_JSON)
-                    .header(Constants.ACCEPT, Constants.APPLICATION_JSON).body(response));
-        });
+                boolean deleted = false;
+                if (user.hasRole(Roles.SUBSCRIBER)) {
+                    deleted = subscriptionRepository.deleteSubscription(subscriberId);
+                }
+
+                if (!deleted) {
+                    response.put(Constants.CODE,    "500");
+                    response.put(Constants.MESSAGE, "Subscription could not be deleted");
+                    response.put(Constants.DATA,    false);
+                } else {
+                    response.put(Constants.CODE,    "200");
+                    response.put(Constants.MESSAGE, "Subscription deleted successfully");
+                    response.put(Constants.DATA,    true);
+                }
+                return Mono.just(jsonOk(response));
+            });
+    }
+
+    // ----------------------------------------------------------------
+    // Private helpers
+    // ----------------------------------------------------------------
+
+    private static ResponseEntity<Map<String, Object>> jsonOk(Map<String, Object> body) {
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_TYPE, Constants.APPLICATION_JSON)
+            .header(Constants.ACCEPT,         Constants.APPLICATION_JSON)
+            .body(body);
     }
 }

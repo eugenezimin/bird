@@ -1,84 +1,116 @@
 package com.ziminpro.twitter.dao;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-
 import com.ziminpro.twitter.dtos.Constants;
 import com.ziminpro.twitter.dtos.Message;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * JDBC-backed implementation of {@link MessageRepository}.
+ *
+ * <p>Schema changes vs. the original implementation:</p>
+ * <ul>
+ *   <li>{@code messages.producer_id} → {@code messages.author_id}</li>
+ *   <li>{@code messages.created} (int Unix epoch) → {@code messages.created_at} (DATETIME)</li>
+ *   <li>The standalone {@code producers} table no longer exists — user identity
+ *       is managed entirely by the UMS service.  The {@code createProducer()}
+ *       helper has been removed accordingly.</li>
+ * </ul>
+ */
 @Repository
 public class JdbcMessageRepository implements MessageRepository {
+
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
-    @Override
-    public Message getMessagebyId(UUID messageId) {
-        List<Message> messages = jdbcTemplate.query(Constants.GET_MESSAGE_BY_ID,
-                (rs, rowNum) -> new Message(DaoHelper.bytesArrayToUuid(rs.getBytes("messages.id")),
-                        DaoHelper.bytesArrayToUuid(rs.getBytes("messages.producer_id")),
-                        rs.getString("messages.content"), rs.getLong("messages.created")),
-                messageId.toString());
+    // ----------------------------------------------------------------
+    // Row mapper
+    // ----------------------------------------------------------------
 
-        // better to return empty message instead of null (for automatic processing)
-        return Optional.ofNullable(messages.getFirst()).orElse(new Message());
+    private static final RowMapper<Message> MESSAGE_ROW_MAPPER = (rs, rowNum) ->
+        new Message(
+            DaoHelper.bytesArrayToUuid(rs.getBytes("id")),
+            DaoHelper.bytesArrayToUuid(rs.getBytes("author_id")),
+            rs.getString("content"),
+            rs.getObject("created_at", LocalDateTime.class)
+        );
+
+    // ----------------------------------------------------------------
+    // Reads
+    // ----------------------------------------------------------------
+
+    @Override
+    public Message getMessageById(UUID messageId) {
+        List<Message> messages = jdbcTemplate.query(
+            Constants.GET_MESSAGE_BY_ID,
+            MESSAGE_ROW_MAPPER,
+            messageId.toString()
+        );
+        // Return an empty sentinel instead of null so callers can check id == null.
+        return messages.isEmpty()
+            ? new Message()
+            : messages.getFirst();
     }
 
     @Override
-    public List<Message> getMessagesForProducerById(UUID prodicerId) {
-        List<Message> messages = jdbcTemplate.query(Constants.GET_MESSAGES_FOR_PRODUCER,
-                (rs, rowNum) -> new Message(DaoHelper.bytesArrayToUuid(rs.getBytes("messages.id")),
-                        DaoHelper.bytesArrayToUuid(rs.getBytes("messages.producer_id")),
-                        rs.getString("messages.content"), rs.getLong("messages.created")),
-                prodicerId.toString());
-
-        return Optional.of(messages).orElse(new ArrayList<>());
+    public List<Message> getMessagesForProducerById(UUID producerId) {
+        return jdbcTemplate.query(
+            Constants.GET_MESSAGES_FOR_PRODUCER,
+            MESSAGE_ROW_MAPPER,
+            producerId.toString()
+        );
     }
 
     @Override
     public List<Message> getMessagesForSubscriberById(UUID subscriberId) {
-        List<Message> messages = jdbcTemplate.query(Constants.GET_MESSAGES_FOR_SUBSCRIBER,
-                (rs, rowNum) -> new Message(DaoHelper.bytesArrayToUuid(rs.getBytes("messages.id")),
-                        DaoHelper.bytesArrayToUuid(rs.getBytes("messages.producer_id")),
-                        rs.getString("messages.content"), rs.getLong("messages.created")),
-                subscriberId.toString());
-        return Optional.of(messages).orElse(new ArrayList<>());
+        return jdbcTemplate.query(
+            Constants.GET_MESSAGES_FOR_SUBSCRIBER,
+            MESSAGE_ROW_MAPPER,
+            subscriberId.toString()
+        );
     }
+
+    // ----------------------------------------------------------------
+    // Writes
+    // ----------------------------------------------------------------
 
     @Override
     public UUID createMessage(Message message) {
-        message.setId(UUID.randomUUID());
-        message.setTimestamp(Instant.now().getEpochSecond());
-        // check for empty message
-        if ((message.getAuthor() == null || message.getContent() == null)
-                & this.createProducer(message.getAuthor()) == null)
-            return null;
-
-        try {
-            jdbcTemplate.update(Constants.CREATE_MESSAGE, message.getId().toString(), message.getAuthor().toString(),
-                    message.getContent(), message.getTimestamp());
-        } catch (Exception e) {
+        if (message.getAuthor() == null || message.getContent() == null
+                || message.getContent().isBlank()) {
             return null;
         }
-        return message.getId();
+
+        UUID newId = UUID.randomUUID();
+        LocalDateTime now = LocalDateTime.now();
+
+        try {
+            jdbcTemplate.update(
+                Constants.CREATE_MESSAGE,
+                newId.toString(),
+                message.getAuthor().toString(),
+                message.getContent(),
+                now
+            );
+        } catch (Exception e) {
+            // e.g. author_id does not correspond to a valid UMS user (validated
+            // upstream), or a transient DB error.
+            return null;
+        }
+
+        message.setId(newId);
+        message.setCreatedAt(now);
+        return newId;
     }
 
     @Override
     public int deleteMessageById(UUID messageId) {
         return jdbcTemplate.update(Constants.DELETE_MESSAGE, messageId.toString());
-    }
-
-    UUID createProducer(UUID producerID) {
-        try {
-            jdbcTemplate.update(Constants.CREATE_PRODUCER, producerID.toString());
-        } catch (Exception e) {
-            return null;
-        }
-        return producerID;
     }
 }

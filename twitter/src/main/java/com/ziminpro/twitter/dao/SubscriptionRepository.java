@@ -1,12 +1,12 @@
 package com.ziminpro.twitter.dao;
 
-import java.util.UUID;
-
 import com.ziminpro.twitter.dtos.Subscription;
 
+import java.util.UUID;
+
 public interface SubscriptionRepository {
-    public Subscription getSubscription(UUID subscriberId);
-    public boolean createSubscription(Subscription subscription);
-    public boolean updateSubscription(Subscription subscription);
-    public boolean deleteSubscription(UUID subscriberId);
+    Subscription getSubscription(UUID subscriberId);
+    boolean      createSubscription(Subscription subscription);
+    boolean      updateSubscription(Subscription subscription);
+    boolean      deleteSubscription(UUID subscriberId);
 }

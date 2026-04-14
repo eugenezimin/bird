@@ -5,8 +5,8 @@ server:
 ## MySQL
 spring:
   datasource:
-    driverClassName: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/twitter?serverTimezone=UTC&useLegacyDatetimeCode=false
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/twitter?serverTimezone=UTC
     username: root
     password: passw
 
@@ -15,4 +15,3 @@ ums:
   port: 9000
   paths:
     user: /users/user
-
