@@ -1,10 +1,13 @@
 // ================================================================
-// twitter/build.gradle
+// ums/build.gradle
 // Spring Boot 4.0.5  |  Gradle 9.4.1  |  JDK 25
 // ================================================================
 
 plugins {
+    // Spring Boot 4 Gradle plugin — requires Gradle 8.14+ or 9.x
     id 'org.springframework.boot'           version '4.0.5'
+    // Dependency management plugin brings BOM support (omit versions
+    // for managed deps).  Latest stable: 1.1.7
     id 'io.spring.dependency-management'    version '1.1.7'
     id 'java'
 }
@@ -12,11 +15,12 @@ plugins {
 // ---------------------------------------------------------------------------
 // Project coordinates
 // ---------------------------------------------------------------------------
-group   = 'com.ziminpro.twitter'
+group   = 'com.ziminpro.ums'
 version = '2.0'
 
 // ---------------------------------------------------------------------------
-// Java toolchain
+// Java toolchain — pins the exact JDK release used for compilation,
+// javadoc, and test execution regardless of what JAVA_HOME points at.
 // ---------------------------------------------------------------------------
 java {
     toolchain {
@@ -30,12 +34,26 @@ java {
 // ---------------------------------------------------------------------------
 repositories {
     mavenCentral()
+    // Milestone / snapshot repos needed only if you consume pre-release
+    // Spring artifacts.  Keep them in case you want to test RC builds.
     maven { url 'https://repo.spring.io/milestone' }
     maven { url 'https://repo.spring.io/snapshot' }
 }
 
 // ---------------------------------------------------------------------------
 // Dependencies
+//
+// Spring Boot 4 note: starters have been modularised.
+//   • spring-boot-starter-webflux  — unchanged name, still reactive/Netty
+//   • spring-boot-starter-jdbc     — unchanged name
+//   • spring-boot-starter-test     — unchanged name (test slice)
+//
+// MySQL connector:
+//   Old (Boot ≤ 2.x):  mysql:mysql-connector-java
+//   New (Boot 3+/4):   com.mysql:mysql-connector-j   ← no version needed,
+//                      managed by the Spring Boot BOM
+//
+// Lombok: annotation processor wiring is unchanged in Gradle 9.
 // ---------------------------------------------------------------------------
 configurations {
     compileOnly {
@@ -49,15 +67,17 @@ dependencies {
 
     // --- Database ---
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+    // New Maven coordinates since Spring Boot 3 — version managed by BOM
     runtimeOnly    'com.mysql:mysql-connector-j'
 
-    // --- Lombok ---
+    // --- Lombok (compile-time only) ---
     compileOnly         'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
 
     // --- Testing ---
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testImplementation 'io.projectreactor:reactor-test'
+    // Boot 4 modular test starters — needed for slice tests
     testImplementation 'org.springframework.boot:spring-boot-starter-webflux-test'
     testImplementation 'org.springframework.boot:spring-boot-starter-jdbc-test'
 }
@@ -67,6 +87,7 @@ dependencies {
 // ---------------------------------------------------------------------------
 tasks.named('test') {
     useJUnitPlatform()
+    // Surface JVM warnings in test output — useful with JDK 25 previews
     jvmArgs '--enable-preview'
 }
 
@@ -74,7 +95,7 @@ tasks.named('test') {
 // Compiler options
 // ---------------------------------------------------------------------------
 tasks.withType(JavaCompile).configureEach {
-    options.release = 25
+    options.release = 25           // --release 25 (replaces sourceCompatibility)
     options.compilerArgs << '--enable-preview'
     options.encoding = 'UTF-8'
 }
