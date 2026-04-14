@@ -1,0 +1,888 @@
+openapi: 3.0.3
+
+info:
+  title: Bird — Twitter Clone API
+  description: |
+    Two-service microservice architecture:
+    - **UMS** (User Management Service) — port `9000`
+    - **Twitter** (Messaging & Subscriptions Service) — port `9001`
+
+    The Twitter service calls UMS internally to validate user roles before
+    every write operation, so UMS must be running first.
+  version: "2.0"
+  contact:
+    name: Eugene Zimin
+  license:
+    name: BSD 2-Clause
+    url: https://opensource.org/licenses/BSD-2-Clause
+
+# Two logical servers — one per microservice
+servers:
+  - url: http://localhost:9000
+    description: UMS — User Management Service
+  - url: http://localhost:9001
+    description: Twitter — Messaging & Subscriptions Service
+
+tags:
+  - name: UMS / Users
+    description: CRUD operations on user accounts
+  - name: UMS / Roles
+    description: Role catalogue
+  - name: UMS / Sessions
+    description: Session lifecycle management
+  - name: Twitter / Messages
+    description: Message (tweet) operations
+  - name: Twitter / Subscriptions
+    description: Producer–subscriber relationship management
+
+# ---------------------------------------------------------------------------
+# PATHS
+# ---------------------------------------------------------------------------
+paths:
+
+  # =========================================================================
+  # UMS — Users
+  # =========================================================================
+
+  /users:
+    servers:
+      - url: http://localhost:9000
+    get:
+      tags: [UMS / Users]
+      summary: Get all users
+      operationId: getAllUsers
+      responses:
+        "200":
+          description: List of all users
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeUserList"
+              example:
+                code: "200"
+                message: List of users retrieved successfully
+                data:
+                  - id: 6e27ea06-a716-4c89-af88-813749a8bd48
+                    name: Donald Trump
+                    email: donald@trump.us
+                    createdAt: "2020-07-31T08:00:00"
+                    roles:
+                      - roleId: eb932dbb-7005-422f-a649-7190af39e984
+                        role: PRODUCER
+                        description: Message content producer
+
+  /users/user:
+    servers:
+      - url: http://localhost:9000
+    post:
+      tags: [UMS / Users]
+      summary: Create a new user
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+            example:
+              name: Eugene Zimin
+              email: eugene@zimin.world
+              passwordHash: password
+              roles:
+                - role: SUBSCRIBER
+                  description: Message content consumer
+                - role: PRODUCER
+                  description: Message content producer
+      responses:
+        "200":
+          description: User created — returns new UUID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeString"
+              example:
+                code: "201"
+                message: User created
+                data: 52bb68f9-7cf6-46c5-9105-00d77638a840
+        "200x":
+          description: Creation failed (duplicate e-mail)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeNull"
+              example:
+                code: "500"
+                message: User has not been created — check for duplicate e-mail
+                data: null
+
+  /users/user/{userId}:
+    servers:
+      - url: http://localhost:9000
+    parameters:
+      - $ref: "#/components/parameters/userId"
+    get:
+      tags: [UMS / Users]
+      summary: Get a user by ID
+      operationId: getUserById
+      responses:
+        "200":
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeUser"
+              example:
+                code: "200"
+                message: User retrieved successfully
+                data:
+                  id: 6e27ea06-a716-4c89-af88-813749a8bd48
+                  name: Donald Trump
+                  email: donald@trump.us
+                  createdAt: "2020-07-31T08:00:00"
+                  roles:
+                    - roleId: eb932dbb-7005-422f-a649-7190af39e984
+                      role: PRODUCER
+                      description: Message content producer
+                  lastSession:
+                    sessionId: 56de00c1-a7dd-4f66-9728-307c5230455e
+                    loggedInAt: "2020-11-12T13:55:00"
+                    loggedOutAt: "2020-11-12T15:00:00"
+        "200x":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeEmpty"
+              example:
+                code: "404"
+                message: User not found
+                data: {}
+    put:
+      tags: [UMS / Users]
+      summary: Update a user
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
+            example:
+              name: Donald J. Trump
+              email: donald@trump.us
+              passwordHash: newpassword
+              roles:
+                - role: SUBSCRIBER
+                - role: PRODUCER
+      responses:
+        "200":
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: User updated
+                    data: true
+                notFound:
+                  value:
+                    code: "404"
+                    message: User not found or not updated
+                    data: false
+    delete:
+      tags: [UMS / Users]
+      summary: Delete a user
+      operationId: deleteUser
+      responses:
+        "200":
+          description: Deletion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: User deleted
+                    data: true
+                notFound:
+                  value:
+                    code: "404"
+                    message: User not found or already deleted
+                    data: false
+
+  # =========================================================================
+  # UMS — Roles
+  # =========================================================================
+
+  /roles:
+    servers:
+      - url: http://localhost:9000
+    get:
+      tags: [UMS / Roles]
+      summary: Get all roles
+      operationId: getAllRoles
+      responses:
+        "200":
+          description: Role catalogue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeRoleList"
+              example:
+                code: "200"
+                message: List of roles retrieved successfully
+                data:
+                  - roleId: 43dcf1d6-3ac0-4290-99fd-44f9b9f9becf
+                    role: ADMIN
+                    description: Administrative role
+                  - roleId: b479b357-7e25-47fa-8dba-bfdaeecc6c2c
+                    role: SUBSCRIBER
+                    description: Message content consumer
+                  - roleId: eb932dbb-7005-422f-a649-7190af39e984
+                    role: PRODUCER
+                    description: Message content producer
+
+  # =========================================================================
+  # UMS — Sessions
+  # =========================================================================
+
+  /sessions/user/{userId}:
+    servers:
+      - url: http://localhost:9000
+    parameters:
+      - $ref: "#/components/parameters/userId"
+    post:
+      tags: [UMS / Sessions]
+      summary: Open a new session for a user
+      operationId: openSession
+      responses:
+        "200":
+          description: Session opened — returns new session UUID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeString"
+              examples:
+                success:
+                  value:
+                    code: "201"
+                    message: Session opened
+                    data: 56de00c1-a7dd-4f66-9728-307c5230455e
+                failed:
+                  value:
+                    code: "500"
+                    message: Could not open session for user 6e27ea06-a716-4c89-af88-813749a8bd48
+                    data: null
+
+  /sessions/user/{userId}/last:
+    servers:
+      - url: http://localhost:9000
+    parameters:
+      - $ref: "#/components/parameters/userId"
+    get:
+      tags: [UMS / Sessions]
+      summary: Get the last session for a user
+      operationId: getLastSession
+      responses:
+        "200":
+          description: Last session data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeSession"
+              examples:
+                found:
+                  value:
+                    code: "200"
+                    message: Last session retrieved
+                    data:
+                      sessionId: 56de00c1-a7dd-4f66-9728-307c5230455e
+                      loggedInAt: "2020-11-12T13:55:00"
+                      loggedOutAt: "2020-11-12T15:00:00"
+                notFound:
+                  value:
+                    code: "404"
+                    message: No session found for user 6e27ea06-a716-4c89-af88-813749a8bd48
+                    data: null
+
+  /sessions/{sessionId}:
+    servers:
+      - url: http://localhost:9000
+    parameters:
+      - $ref: "#/components/parameters/sessionId"
+    delete:
+      tags: [UMS / Sessions]
+      summary: Close an existing session
+      operationId: closeSession
+      responses:
+        "200":
+          description: Session close result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: Session closed
+                    data: true
+                notFound:
+                  value:
+                    code: "404"
+                    message: Session not found or already closed
+                    data: false
+
+  # =========================================================================
+  # Twitter — Messages
+  # =========================================================================
+
+  /messages/message:
+    servers:
+      - url: http://localhost:9001
+    post:
+      tags: [Twitter / Messages]
+      summary: Create a new message
+      description: The author must have the PRODUCER role in UMS.
+      operationId: createMessage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageCreate"
+            example:
+              author: 1cd89e11-602a-4186-afbf-e0149b59eb08
+              content: Mr. Macron would like to say hello!
+      responses:
+        "200":
+          description: Creation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeString"
+              examples:
+                success:
+                  value:
+                    code: "201"
+                    message: Message has been created
+                    data: df7e3d8f-e19a-4458-bad6-4be7585200f5
+                failed:
+                  value:
+                    code: "400"
+                    message: Message has not been created
+                    data: Something went wrong
+
+  /messages/message/{messageId}:
+    servers:
+      - url: http://localhost:9001
+    parameters:
+      - $ref: "#/components/parameters/messageId"
+    get:
+      tags: [Twitter / Messages]
+      summary: Get a message by ID
+      operationId: getMessageById
+      responses:
+        "200":
+          description: Message found or not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeMessage"
+              examples:
+                found:
+                  value:
+                    code: "200"
+                    message: Message has been found
+                    data:
+                      id: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
+                      author: 6e27ea06-a716-4c89-af88-813749a8bd48
+                      content: Donald Trump posted his first message
+                      timestamp: 1605194709
+                notFound:
+                  value:
+                    code: "404"
+                    message: Message not found
+                    data: {}
+    delete:
+      tags: [Twitter / Messages]
+      summary: Delete a message by ID
+      operationId: deleteMessage
+      responses:
+        "200":
+          description: Deletion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: Message e5c6f13a-76d6-48b6-81f0-20b74fa9f04c successfully deleted
+                    data: true
+                failed:
+                  value:
+                    code: "500"
+                    message: Message e5c6f13a-76d6-48b6-81f0-20b74fa9f04c has not been deleted
+                    data: false
+
+  /messages/producer/{producerId}:
+    servers:
+      - url: http://localhost:9001
+    parameters:
+      - name: producerId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 6e27ea06-a716-4c89-af88-813749a8bd48
+    get:
+      tags: [Twitter / Messages]
+      summary: Get all messages by a producer
+      operationId: getMessagesByProducer
+      responses:
+        "200":
+          description: List of messages (empty array if none found)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeMessageList"
+              examples:
+                found:
+                  value:
+                    code: "200"
+                    message: List of messages has been requested successfully
+                    data:
+                      - id: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
+                        author: 6e27ea06-a716-4c89-af88-813749a8bd48
+                        content: Donald Trump posted his first message
+                        timestamp: 1605194709
+                notFound:
+                  value:
+                    code: "404"
+                    message: Either producer didn't produce any messages or producer not found
+                    data: []
+
+  /messages/subscriber/{subscriberId}:
+    servers:
+      - url: http://localhost:9001
+    parameters:
+      - name: subscriberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+    get:
+      tags: [Twitter / Messages]
+      summary: Get all messages for a subscriber (their feed)
+      description: Returns messages from all producers the subscriber follows. The subscriber must have the SUBSCRIBER role in UMS.
+      operationId: getMessagesBySubscriber
+      responses:
+        "200":
+          description: Feed messages (empty array if no subscriptions or not a subscriber)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeMessageList"
+              examples:
+                found:
+                  value:
+                    code: "200"
+                    message: List of messages has been requested successfully
+                    data:
+                      - id: df7e3d8f-e19a-4458-bad6-4be7585200f5
+                        author: 1cd89e11-602a-4186-afbf-e0149b59eb08
+                        content: Mr. Macron would like to say hello!
+                        timestamp: 1605197637
+                notFound:
+                  value:
+                    code: "404"
+                    message: Subscription not found or empty
+                    data: []
+
+  # =========================================================================
+  # Twitter — Subscriptions
+  # =========================================================================
+
+  /subscriptions:
+    servers:
+      - url: http://localhost:9001
+    post:
+      tags: [Twitter / Subscriptions]
+      summary: Create a subscription
+      description: The subscriber must have the SUBSCRIBER role in UMS. Adds the subscriber row and all producer rows if they don't already exist.
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription"
+            example:
+              subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+              producers:
+                - 1cd89e11-602a-4186-afbf-e0149b59eb08
+                - 6e27ea06-a716-4c89-af88-813749a8bd48
+      responses:
+        "200":
+          description: Creation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: Subscription has been created
+                    data: true
+                failed:
+                  value:
+                    code: "500"
+                    message: Subscriptions has not been created
+                    data: false
+    put:
+      tags: [Twitter / Subscriptions]
+      summary: Update a subscription
+      description: Replaces the entire producer list for the given subscriber (delete + re-create internally).
+      operationId: updateSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription"
+            example:
+              subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+              producers:
+                - 1cd89e11-602a-4186-afbf-e0149b59eb08
+      responses:
+        "200":
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "201"
+                    message: Subscription has been updated
+                    data: true
+                failed:
+                  value:
+                    code: "500"
+                    message: Subscription has not been updated
+                    data: false
+
+  /subscriptions/subscriber/{subscriberId}:
+    servers:
+      - url: http://localhost:9001
+    parameters:
+      - name: subscriberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+        example: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+    get:
+      tags: [Twitter / Subscriptions]
+      summary: Get subscription for a subscriber
+      operationId: getSubscription
+      responses:
+        "200":
+          description: Subscription data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeSubscription"
+              examples:
+                found:
+                  value:
+                    code: "201"
+                    message: Subscriptions have been retrieved
+                    data:
+                      subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+                      producers:
+                        - 1cd89e11-602a-4186-afbf-e0149b59eb08
+                        - 6e27ea06-a716-4c89-af88-813749a8bd48
+                notFound:
+                  value:
+                    code: "404"
+                    message: Subscriptions for user with ID 70a64b54-43c3-4c18-bbec-64590ff7e0cc is not found
+                    data: {}
+    delete:
+      tags: [Twitter / Subscriptions]
+      summary: Delete all subscriptions for a subscriber
+      operationId: deleteSubscription
+      responses:
+        "200":
+          description: Deletion result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "201"
+                    message: Subscription has been deleted
+                    data: true
+                failed:
+                  value:
+                    code: "500"
+                    message: Subscription has not been deleted
+                    data: false
+
+# ---------------------------------------------------------------------------
+# COMPONENTS
+# ---------------------------------------------------------------------------
+components:
+
+  parameters:
+    userId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 6e27ea06-a716-4c89-af88-813749a8bd48
+
+    sessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: 56de00c1-a7dd-4f66-9728-307c5230455e
+
+    messageId:
+      name: messageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
+
+  schemas:
+
+    # ------------------------------------------------------------------
+    # Domain objects
+    # ------------------------------------------------------------------
+
+    Role:
+      type: object
+      properties:
+        roleId:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [ADMIN, PRODUCER, SUBSCRIBER]
+        description:
+          type: string
+
+    LastSession:
+      type: object
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        loggedInAt:
+          type: string
+          format: date-time
+        loggedOutAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        createdAt:
+          type: string
+          format: date-time
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+        lastSession:
+          $ref: "#/components/schemas/LastSession"
+
+    UserCreate:
+      type: object
+      required: [name, email, passwordHash]
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        passwordHash:
+          type: string
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        author:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 280
+        timestamp:
+          type: integer
+          format: int64
+          description: Unix epoch seconds
+
+    MessageCreate:
+      type: object
+      required: [author, content]
+      properties:
+        author:
+          type: string
+          format: uuid
+        content:
+          type: string
+          maxLength: 280
+
+    Subscription:
+      type: object
+      required: [subscriber, producers]
+      properties:
+        subscriber:
+          type: string
+          format: uuid
+        producers:
+          type: array
+          items:
+            type: string
+            format: uuid
+
+    # ------------------------------------------------------------------
+    # Response envelopes  { code, message, data }
+    # All endpoints return HTTP 200 with a code field inside the body.
+    # ------------------------------------------------------------------
+
+    EnvelopeUserList:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+
+    EnvelopeUser:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/User"
+
+    EnvelopeRoleList:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Role"
+
+    EnvelopeSession:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/LastSession"
+
+    EnvelopeMessage:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/Message"
+
+    EnvelopeMessageList:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+
+    EnvelopeSubscription:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          $ref: "#/components/schemas/Subscription"
+
+    EnvelopeString:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          type: string
+          nullable: true
+
+    EnvelopeBoolean:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          type: boolean
+
+    EnvelopeNull:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          nullable: true
+
+    EnvelopeEmpty:
+      type: object
+      properties:
+        code:    { type: string }
+        message: { type: string }
+        data:
+          type: object
