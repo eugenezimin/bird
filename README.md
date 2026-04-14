@@ -34,9 +34,10 @@ To build the project, follow the steps below.
 
 4. Create databases for MySQL and then tables. After that import data there.
     ```shell
-    docker exec -it bird mysql -u root -ppassw -e "create database ums; create database twitter;"
-    docker exec -it bird mysql -u root -ppassw -e "use ums; source /database/ums.sql"
-    docker exec -it bird mysql -u root -ppassw -e "use twitter; source /database/twitter.sql"
+    docker exec -i bird mysql -u root -ppassw < 01_ums_ddl.sql
+    docker exec -i bird mysql -u root -ppassw < 02_twitter_ddl.sql
+    docker exec -i bird mysql -u root -ppassw < 03_ums_dml.sql
+    docker exec -i bird mysql -u root -ppassw < 04_twitter_dml.sql
     ```
 
 5. Build your Java applications using Gradle
