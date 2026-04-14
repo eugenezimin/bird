@@ -1,0 +1,38 @@
+/* Bird — Global CSS Variables & Reset */
+
+:root {
+  --color-bg:        #0f1117;
+  --color-surface:   #1a1d27;
+  --color-border:    #2a2d3a;
+  --color-accent:    #1d9bf0;
+  --color-accent-hover: #1a8cd8;
+  --color-text:      #e7e9ea;
+  --color-muted:     #71767b;
+  --color-danger:    #f4212e;
+  --color-success:   #00ba7c;
+
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  20px;
+  --radius-full: 9999px;
+
+  --font-body:    'DM Sans', sans-serif;
+  --font-display: 'Syne', sans-serif;
+
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--color-bg);
+  color:      var(--color-text);
+  font-family: var(--font-body);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--color-accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+button { cursor: pointer; font-family: inherit; }
