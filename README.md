@@ -1,82 +1,361 @@
-## Local Twitter application
-This is a conceptual representation of the Twitter (X) application created for learning puproses for students in Algonquin College for course CST8277 "Enterprise Application Programming". The goal of this project is to demonstrate pros and cons of the microservice architecture in action and let student create the same application by themselves in 4 major steps:
-1. General design
-2. Data model
-3. Impelementation
-4. Securing applications
+# Local Twitter application — Twitter Clone
 
-### Build & Run
+> A microservice-based Twitter/X clone built for **CST8277 Enterprise Application Programming** at Algonquin College.
+> The goal is to demonstrate microservice architecture in practice — its benefits, trade-offs, and implementation patterns — while guiding students through building the same system step by step.
 
-To build the project, follow the steps below.
-1. Install prerequisites
-  - JDK 17 with `JAVA_HOME` pointing to the right version
-  - Gradle 8.7
-  - Docker
+---
 
-2. Clone the repository from GitHub
-    ```shell
-    cd $HOME
-    git clone https://github.com/eugenezimin/bird.git
-    ```
-2. Go into the folder
-    ```shell
-    cd $HOME/bird
-    ```
+## Documentation
 
-3. Set up the database by running the provided SQL script.
-    ```shell
-    docker run -e MYSQL_ROOT_PASSWORD=passw \
-    -d --name bird \
-    -v bird-db-data:/var/folders/mysql/data \
-    -v ./database:/database -p 3306:3306 \
-    mysql:latest
-    ```
+| Document | Description |
+|---|---|
+| **[UMS Service →](docs/UMS.md)** | User Management Service — users, roles, sessions |
+| **[Twitter Service →](docs/TWITTER.md)** | Messaging & Subscriptions Service |
+| **[Frontend (UI) →](docs/UI.md)** | React + Vite web interface |
 
-4. Create databases for MySQL and then tables. After that import data there.
-    ```shell
-    docker exec -i bird mysql -u root -ppassw < 01_ums_ddl.sql
-    docker exec -i bird mysql -u root -ppassw < 02_twitter_ddl.sql
-    docker exec -i bird mysql -u root -ppassw < 03_ums_dml.sql
-    docker exec -i bird mysql -u root -ppassw < 04_twitter_dml.sql
-    ```
+---
 
-5. Build your Java applications using Gradle
-    - UMS service
-        ```shell
-        cd $HOME/bird/ums
-        gradle build
-        ```
-    - Messaging service
-        ```shell
-        cd $HOME/bird/twitter
-        gradle build
-        ```
+## Project Goals
 
-6. Start the application and check how it works
-    - UMS service
-        ```shell
-        cd $HOME/bird/ums/build/libs/
-        java -jar ums-1.2.jar
-        ```
-    - Messaging service
-        ```shell
-        cd $HOME/bird/ums/build/libs/
-        java -jar twitter-1.2.jar
-        ```
+This project walks students through four phases of enterprise software development:
 
-### Verify How It Works
-As a result you should have 2 separate services running on your local machine using ports `9000` and `9001` accordingly. Import Postman collections from the `requests` folder into your Postman/Hopscotch/Insomnia client to check how it works.
+1. **General Design** — Architecture decisions, service boundaries, API contracts
+2. **Data Model** — Schema design with production-quality practices (UUIDs, constraints, indexes)
+3. **Implementation** — Reactive Spring Boot microservices with JDBC
+4. **Securing Applications** *(upcoming)* — Auth, sessions, role-based access control
 
-## Contributing 
-Contributions to this repository are welcome! If you would like to add a new code or improve an existing one, please follow these steps: 
-1. Fork the repository. 
-2. Create a new branch for your changes: `git checkout -b my-new-branch` 
-3. Add your article or make changes to an existing one. 
-4. Commit your changes: `git commit -m "Add new code"` 
-5. Push your changes to your forked repository: `git push origin my-new-branch` 
-6. Open a pull request in this repository, describing your changes. 
+---
 
-Please ensure that your article is well-written, accurate, and includes relevant comments. 
+## Architecture Overview
 
-## License 
-This repository is licensed under the [BSD 2-Clause License](LICENSE).
+![[system_architecture.svg]]
+
+---
+
+## Request Flow — Posting a Message
+
+```mermaid
+sequenceDiagram
+    participant UI as React UI
+    participant TW as Twitter :9001
+    participant UMS as UMS :9000
+    participant DB as MySQL
+
+    UI->>TW: POST /messages { authorId, content }
+
+    activate TW
+    TW->>UMS: GET /users/{id}
+
+    activate UMS
+    UMS->>DB: SELECT user + roles
+    DB-->>UMS: user row + roles[]
+    deactivate UMS
+
+    UMS-->>TW: UserDto { roles: [...] }
+
+    note over TW: validate role == PRODUCER?
+
+    TW->>DB: INSERT INTO messages
+    DB-->>TW: ok
+
+    TW-->>UI: 201 { message }
+    deactivate TW
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Version |
+|---|---|---|
+| **Backend runtime** | Java | 25 |
+| **Backend framework** | Spring Boot (WebFlux) | 4.0.5 |
+| **Build tool** | Gradle | 9.4.1 |
+| **Database** | MySQL | 8 (latest Docker image) |
+| **JDBC driver** | mysql-connector-j | managed by Spring BOM |
+| **JSON** | Jackson + JavaTimeModule | managed by Spring BOM |
+| **Code generation** | Lombok | managed by Spring BOM |
+| **Frontend framework** | React | 18 |
+| **Frontend build** | Vite | 5 |
+| **HTTP client (FE)** | Axios | 1.7 |
+| **State management** | Zustand | 4.5 |
+| **Routing** | React Router | 6 |
+| **Date utilities** | date-fns | 3.6 |
+| **Container** | Docker | any recent |
+| **API spec** | OpenAPI 3.0 (YAML) | — |
+
+---
+
+## Quick Start (TL;DR)
+
+```bash
+# 1. Clone
+git clone https://github.com/eugenezimin/bird.git && cd bird
+
+# 2. Start MySQL
+docker run -e MYSQL_ROOT_PASSWORD=passw -d --name bird \
+  -v bird-db-data:/var/lib/mysql \
+  -v ./database/mysql:/database -p 3306:3306 mysql:latest
+
+# 3. Seed database
+cd database/mysql
+docker exec -i bird mysql -u root -ppassw < 01_ums_ddl.sql
+docker exec -i bird mysql -u root -ppassw < 02_twitter_ddl.sql
+docker exec -i bird mysql -u root -ppassw < 03_ums_dml.sql
+docker exec -i bird mysql -u root -ppassw < 04_twitter_dml.sql
+cd ../..
+
+# 4. Start UMS  (terminal 1)
+cd ums && gradle build && java -jar build/libs/ums-2.0.jar
+
+# 5. Start Twitter  (terminal 2)
+cd twitter && gradle build && java -jar build/libs/twitter-2.0.jar
+
+# 6. Start Frontend  (terminal 3)
+cd frontend && npm install && npm run dev
+```
+
+Full step-by-step instructions are in the sections below.
+
+---
+
+## Step-by-Step Setup
+
+### Prerequisites
+
+Make sure all of these are installed before starting:
+
+| Tool | Required version | Check |
+|---|---|---|
+| JDK (Oracle) | 25 | `java -version` |
+| Gradle | 9.4.1 | `gradle -version` |
+| Docker | any recent | `docker -v` |
+| Node.js | 20+ | `node -v` |
+| npm | 10+ | `npm -v` |
+
+> **`JAVA_HOME`** must point to JDK 25. Both services use Java preview features and will not start on older JDKs.
+
+---
+
+### Step 1 — Clone the repository
+
+```bash
+cd $HOME
+git clone https://github.com/eugenezimin/bird.git
+cd bird
+```
+
+---
+
+### Step 2 — Start MySQL in Docker
+
+```bash
+docker run \
+  -e MYSQL_ROOT_PASSWORD=passw \
+  -d --name bird \
+  -v bird-db-data:/var/lib/mysql \
+  -v ./database/mysql:/database \
+  -p 3306:3306 \
+  mysql:latest
+```
+
+Wait ~10 seconds for MySQL to finish initialising, then verify it is running:
+
+```bash
+docker ps | grep bird
+```
+
+---
+
+### Step 3 — Create schemas and seed data
+
+Run all four SQL files **in order** from the `database/mysql/` directory:
+
+```bash
+cd $HOME/bird/database/mysql
+
+docker exec -i bird mysql -u root -ppassw < 01_ums_ddl.sql
+docker exec -i bird mysql -u root -ppassw < 02_twitter_ddl.sql
+docker exec -i bird mysql -u root -ppassw < 03_ums_dml.sql
+docker exec -i bird mysql -u root -ppassw < 04_twitter_dml.sql
+```
+
+| File | Purpose |
+|---|---|
+| `01_ums_ddl.sql` | Creates `ums` database + tables (users, roles, users_roles, sessions) |
+| `02_twitter_ddl.sql` | Creates `twitter` database + tables (messages, subscriptions) |
+| `03_ums_dml.sql` | Seeds 12 users, 3 roles, role assignments |
+| `04_twitter_dml.sql` | Seeds 25 messages + 26 subscriptions |
+
+To verify:
+
+```bash
+docker exec -it bird mysql -u root -ppassw -e "SELECT COUNT(*) FROM ums.users;"
+docker exec -it bird mysql -u root -ppassw -e "SELECT COUNT(*) FROM twitter.messages;"
+```
+
+---
+
+### Step 4 — Build and run UMS Service
+
+Open a **new terminal** for this service.
+
+```bash
+cd $HOME/bird/ums
+gradle build
+java -jar build/libs/ums-2.0.jar
+```
+
+UMS starts on **http://localhost:9000**
+
+Quick smoke test:
+
+```bash
+curl http://localhost:9000/users
+```
+
+You should receive a JSON envelope with 12 users.
+
+---
+
+### Step 5 — Build and run Twitter Service
+
+Open another **new terminal** for this service. UMS must already be running.
+
+```bash
+cd $HOME/bird/twitter
+gradle build
+java -jar build/libs/twitter-2.0.jar
+```
+
+Twitter service starts on **http://localhost:9001**
+
+Quick smoke test:
+
+```bash
+curl http://localhost:9001/messages
+```
+
+---
+
+### Step 6 — Start the Frontend
+
+Open a third **new terminal**.
+
+```bash
+cd $HOME/bird/frontend
+npm install
+npm run dev
+```
+
+The React app is now at **http://localhost:5173**
+
+---
+
+## Verification
+
+After all three steps, you should have:
+
+| Service | URL | Status |
+|---|---|---|
+| UMS | http://localhost:9000 | `GET /users` → 200 |
+| Twitter | http://localhost:9001 | `GET /messages` → 200 |
+| Frontend | http://localhost:5173 | React app loads |
+| MySQL | localhost:3306 | Port open |
+
+Import the OpenAPI spec from `requests/OpenAPI/requests.yaml` into **[Postman](https://www.postman.com/downloads/)**, **[Bruno](https://www.usebruno.com)**, or **[Hopscotch](https://docs.hoppscotch.io/documentation/clients/desktop/overview)** to explore all available endpoints interactively.
+
+---
+
+## Repository Structure
+
+```
+bird/
+├── README.md                  ← You are here
+├── docs/
+│   ├── UMS.md                 ← UMS service deep-dive
+│   ├── TWITTER.md             ← Twitter service deep-dive
+│   └── UI.md                  ← Frontend deep-dive
+│
+├── database/
+│   └── mysql/
+│       ├── 01_ums_ddl.sql     ← UMS schema
+│       ├── 02_twitter_ddl.sql ← Twitter schema
+│       ├── 03_ums_dml.sql     ← UMS seed data (12 users)
+│       └── 04_twitter_dml.sql ← Twitter seed data (25 msgs, 26 subs)
+│
+├── ums/                       ← UMS Spring Boot service
+│   ├── build.gradle
+│   ├── settings.gradle
+│   └── src/main/java/com/ziminpro/ums/
+│       ├── controllers/       ← REST controllers
+│       ├── services/          ← Business logic
+│       ├── dao/               ← JDBC repositories
+│       └── dtos/              ← DTOs, constants, SQL strings
+│
+├── twitter/                   ← Twitter Spring Boot service
+│   ├── build.gradle
+│   ├── settings.gradle
+│   └── src/main/java/com/ziminpro/twitter/
+│       ├── controllers/       ← REST controllers
+│       ├── services/          ← Business logic
+│       ├── dao/               ← JDBC repositories
+│       └── dtos/              ← DTOs, constants, SQL
+│
+├── frontend/                  ← React + Vite UI
+│   ├── package.json
+│   ├── vite.config.js
+│   └── src/
+│       ├── api/               ← Axios clients (umsApi, twitterApi)
+│       ├── components/        ← Reusable UI components
+│       ├── pages/             ← Route-level views
+│       ├── store/             ← Zustand global state
+│       ├── hooks/             ← Custom React hooks
+│       └── utils/             ← Helpers (date formatting, envelope extraction)
+│
+└── requests/
+    └── OpenAPI/
+        └── requests.yaml      ← Full OpenAPI 3.0 spec
+```
+
+---
+
+## Key Design Decisions
+
+**Binary UUIDs** — Primary keys use `BINARY(16)` with `UUID_TO_BIN()` / `BIN_TO_UUID()` instead of `CHAR(36)`. This halves index size and significantly improves query performance on large tables.
+
+**Cross-database referential integrity** — MySQL does not support foreign keys across databases. The `twitter` service references users by UUID but enforces integrity at the application layer via `UMSConnector`, which calls UMS before every write.
+
+**Reactive stack** — Both services use Spring WebFlux (Netty). The Twitter service calls UMS asynchronously via `WebClient`, returning `Mono<ResponseEntity>` chains rather than blocking.
+
+**Sessions table** — Instead of a simple `last_visit` timestamp on the user, a dedicated `sessions` table tracks full login/logout history. This enables audit trails and concurrent session detection.
+
+**DATETIME over epoch integers** — All timestamps are stored as `DATETIME` in MySQL and deserialized as `LocalDateTime` in Java (via `JavaTimeModule`). This avoids timezone math bugs and makes SQL queries human-readable.
+
+---
+
+## Seed Data
+
+The database ships with realistic fictional data:
+
+- **12 users** — world leaders as personas (Donald Trump, Emmanuel Macron, Xi Jinping, etc.)
+- **3 roles** — `ADMIN`, `PRODUCER`, `SUBSCRIBER`
+- **25 messages** — spread across 8 producer accounts, max 280 characters each
+- **26 subscriptions** — forming a realistic social graph
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create a branch: `git checkout -b my-feature`
+3. Make your changes with clear commit messages
+4. Push and open a Pull Request describing what you changed and why
+
+Please ensure code is well-commented and consistent with the existing style.
+
+---
+
+## License
+
+[BSD 2-Clause License](LICENSE) - Use it like you want :)
