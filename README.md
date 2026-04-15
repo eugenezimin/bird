@@ -28,7 +28,7 @@ This project walks students through four phases of enterprise software developme
 
 ## Architecture Overview
 
-![[system_architecture.svg]]
+![Service Architecture](./system_architecture.svg)
 
 ---
 
