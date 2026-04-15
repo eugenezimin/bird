@@ -6,7 +6,7 @@ The Bird frontend is a single-page React application that provides a Twitter-lik
 
 ## Screenshots
 
-![Main View](./images/my_feed.png)
+![Main View](./images/user_select.png)
 Main View
 
 ![Explore Subscriptions](./images/explore.png)

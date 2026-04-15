@@ -8,9 +8,9 @@ The goal is to demonstrate microservice architecture in practice — its benefit
 
 | Document | Description |
 |---|---|
-| **[UMS Service →](docs/UMS.md)** | User Management Service — users, roles, sessions |
-| **[Twitter Service →](docs/TWITTER.md)** | Messaging & Subscriptions Service |
-| **[Frontend (UI) →](docs/UI.md)** | React + Vite web interface |
+| **[UMS Service →](./ums/README.md)** | User Management Service — users, roles, sessions |
+| **[Twitter Service →](./twitter/README.md)** | Messaging & Subscriptions Service |
+| **[Frontend (UI) →](./frontend/README.md)** | React + Vite web interface |
 
 ## Project Goals
 
