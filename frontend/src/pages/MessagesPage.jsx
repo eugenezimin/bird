@@ -1,4 +1,5 @@
-// TODO: implement Messages page
+import { Navigate } from 'react-router-dom';
+
 export default function MessagesPage() {
-  return <div className="page">Messages</div>;
+  return <Navigate to="/feed" replace />;
 }

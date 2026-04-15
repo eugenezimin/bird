@@ -1,9 +1,20 @@
-import { format, formatDistanceToNow } from 'date-fns';
+export function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60_000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  const d = Math.floor(h / 24);
+  if (d < 7)  return `${d}d`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
 
-/** "Nov 12, 2020 at 2:38 PM" */
-export const formatFull = (dateStr) =>
-  format(new Date(dateStr), 'MMM d, yyyy \'at\' h:mm a');
-
-/** "3 hours ago" */
-export const formatRelative = (dateStr) =>
-  formatDistanceToNow(new Date(dateStr), { addSuffix: true });
+export function formatFull(dateStr) {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('en-US', {
+    month: 'short', day: 'numeric', year: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+  });
+}

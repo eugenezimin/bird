@@ -1,8 +1,6 @@
-/**
- * Hook: fetch the full user list from UMS.
- */
 import { useState, useEffect } from 'react';
 import { umsApi } from '../api';
+import { safeExtract } from '../utils';
 
 export function useUsers() {
   const [users,   setUsers]   = useState([]);
@@ -12,8 +10,8 @@ export function useUsers() {
   useEffect(() => {
     setLoading(true);
     umsApi.getAllUsers()
-      .then(res  => setUsers(res.data.data ?? []))
-      .catch(err => setError(err))
+      .then(res  => setUsers(safeExtract(res, [])))
+      .catch(err => setError(err.message))
       .finally(  () => setLoading(false));
   }, []);
 

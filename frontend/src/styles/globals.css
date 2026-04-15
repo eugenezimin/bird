@@ -1,38 +1,124 @@
-/* Bird — Global CSS Variables & Reset */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap');
 
 :root {
-  --color-bg:        #0f1117;
-  --color-surface:   #1a1d27;
-  --color-border:    #2a2d3a;
-  --color-accent:    #1d9bf0;
-  --color-accent-hover: #1a8cd8;
-  --color-text:      #e7e9ea;
-  --color-muted:     #71767b;
-  --color-danger:    #f4212e;
-  --color-success:   #00ba7c;
+  --bg-primary:    #000000;
+  --bg-secondary:  #0d1117;
+  --bg-hover:      #080808;
+  --bg-card:       #16181c;
+  --bg-input:      #202327;
+  --bg-modal:      #000000;
 
-  --radius-sm:  6px;
-  --radius-md:  12px;
-  --radius-lg:  20px;
-  --radius-full: 9999px;
+  --border:        #2f3336;
+  --border-light:  #1d2125;
 
-  --font-body:    'DM Sans', sans-serif;
-  --font-display: 'Syne', sans-serif;
+  --accent:        #1d9bf0;
+  --accent-hover:  #1a8cd8;
+  --accent-dim:    rgba(29,155,240,0.1);
+  --accent-dim2:   rgba(29,155,240,0.2);
 
-  --shadow-card: 0 1px 3px rgba(0,0,0,0.4);
+  --text-primary:  #e7e9ea;
+  --text-secondary:#71767b;
+  --text-muted:    #3e4144;
+
+  --danger:        #f4212e;
+  --danger-dim:    rgba(244,33,46,0.1);
+  --success:       #00ba7c;
+  --like:          #f91880;
+  --like-dim:      rgba(249,24,128,0.1);
+  --repost:        #00ba7c;
+  --repost-dim:    rgba(0,186,124,0.1);
+
+  --font-ui:       'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display:  sans-serif;
+
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     16px;
+  --radius-full:   9999px;
+
+  --sidebar-w:     275px;
+  --right-w:       348px;
 }
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html { scroll-behavior: smooth; }
 
 body {
-  background: var(--color-bg);
-  color:      var(--color-text);
-  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
-a { color: var(--color-accent); text-decoration: none; }
-a:hover { text-decoration: underline; }
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
 
-button { cursor: pointer; font-family: inherit; }
+button {
+  font-family: var(--font-ui);
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+input, textarea {
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+}
+
+::-webkit-scrollbar { width: 0px; }
+
+::selection {
+  background: var(--accent-dim2);
+  color: var(--text-primary);
+}
+
+/* Utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
