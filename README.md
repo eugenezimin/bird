@@ -3,8 +3,6 @@
 > A microservice-based Twitter/X clone built for **CST8277 Enterprise Application Programming** at Algonquin College.
 > The goal is to demonstrate microservice architecture in practice — its benefits, trade-offs, and implementation patterns — while guiding students through building the same system step by step.
 
----
-
 ## Documentation
 
 | Document | Description |
@@ -12,8 +10,6 @@
 | **[UMS Service →](docs/UMS.md)** | User Management Service — users, roles, sessions |
 | **[Twitter Service →](docs/TWITTER.md)** | Messaging & Subscriptions Service |
 | **[Frontend (UI) →](docs/UI.md)** | React + Vite web interface |
-
----
 
 ## Project Goals
 
@@ -24,13 +20,9 @@ This project walks students through four phases of enterprise software developme
 3. **Implementation** — Reactive Spring Boot microservices with JDBC
 4. **Securing Applications** *(upcoming)* — Auth, sessions, role-based access control
 
----
-
 ## Architecture Overview
 
 ![Service Architecture](./system_architecture.svg)
-
----
 
 ## Request Flow — Posting a Message
 
@@ -62,8 +54,6 @@ sequenceDiagram
     deactivate TW
 ```
 
----
-
 ## Tech Stack
 
 | Layer | Technology | Version |
@@ -84,9 +74,9 @@ sequenceDiagram
 | **Container** | Docker | any recent |
 | **API spec** | OpenAPI 3.0 (YAML) | — |
 
----
+## Installation
 
-## Quick Start (TL;DR)
+### Quick Start (TL;DR)
 
 ```bash
 # 1. Clone
@@ -117,11 +107,9 @@ cd frontend && npm install && npm run dev
 
 Full step-by-step instructions are in the sections below.
 
----
+### Step-by-Step Setup
 
-## Step-by-Step Setup
-
-### Prerequisites
+#### Prerequisites
 
 Make sure all of these are installed before starting:
 
@@ -135,9 +123,7 @@ Make sure all of these are installed before starting:
 
 > **`JAVA_HOME`** must point to JDK 25. Both services use Java preview features and will not start on older JDKs.
 
----
-
-### Step 1 — Clone the repository
+#### Step 1 — Clone the repository
 
 ```bash
 cd $HOME
@@ -145,9 +131,7 @@ git clone https://github.com/eugenezimin/bird.git
 cd bird
 ```
 
----
-
-### Step 2 — Start MySQL in Docker
+#### Step 2 — Start MySQL in Docker
 
 ```bash
 docker run \
@@ -165,9 +149,7 @@ Wait ~10 seconds for MySQL to finish initialising, then verify it is running:
 docker ps | grep bird
 ```
 
----
-
-### Step 3 — Create schemas and seed data
+#### Step 3 — Create schemas and seed data
 
 Run all four SQL files **in order** from the `database/mysql/` directory:
 
@@ -194,9 +176,7 @@ docker exec -it bird mysql -u root -ppassw -e "SELECT COUNT(*) FROM ums.users;"
 docker exec -it bird mysql -u root -ppassw -e "SELECT COUNT(*) FROM twitter.messages;"
 ```
 
----
-
-### Step 4 — Build and run UMS Service
+#### Step 4 — Build and run UMS Service
 
 Open a **new terminal** for this service.
 
@@ -216,9 +196,7 @@ curl http://localhost:9000/users
 
 You should receive a JSON envelope with 12 users.
 
----
-
-### Step 5 — Build and run Twitter Service
+#### Step 5 — Build and run Twitter Service
 
 Open another **new terminal** for this service. UMS must already be running.
 
@@ -236,9 +214,7 @@ Quick smoke test:
 curl http://localhost:9001/messages
 ```
 
----
-
-### Step 6 — Start the Frontend
+#### Step 6 — Start the Frontend
 
 Open a third **new terminal**.
 
@@ -249,8 +225,6 @@ npm run dev
 ```
 
 The React app is now at **http://localhost:5173**
-
----
 
 ## Verification
 
@@ -264,8 +238,6 @@ After all three steps, you should have:
 | MySQL | localhost:3306 | Port open |
 
 Import the OpenAPI spec from `requests/OpenAPI/requests.yaml` into **[Postman](https://www.postman.com/downloads/)**, **[Bruno](https://www.usebruno.com)**, or **[Hopscotch](https://docs.hoppscotch.io/documentation/clients/desktop/overview)** to explore all available endpoints interactively.
-
----
 
 ## Repository Structure
 
@@ -318,8 +290,6 @@ bird/
         └── requests.yaml      ← Full OpenAPI 3.0 spec
 ```
 
----
-
 ## Key Design Decisions
 
 **Binary UUIDs** — Primary keys use `BINARY(16)` with `UUID_TO_BIN()` / `BIN_TO_UUID()` instead of `CHAR(36)`. This halves index size and significantly improves query performance on large tables.
@@ -332,8 +302,6 @@ bird/
 
 **DATETIME over epoch integers** — All timestamps are stored as `DATETIME` in MySQL and deserialized as `LocalDateTime` in Java (via `JavaTimeModule`). This avoids timezone math bugs and makes SQL queries human-readable.
 
----
-
 ## Seed Data
 
 The database ships with realistic fictional data:
@@ -343,8 +311,6 @@ The database ships with realistic fictional data:
 - **25 messages** — spread across 8 producer accounts, max 280 characters each
 - **26 subscriptions** — forming a realistic social graph
 
----
-
 ## Contributing
 
 1. Fork the repository
@@ -353,8 +319,6 @@ The database ships with realistic fictional data:
 4. Push and open a Pull Request describing what you changed and why
 
 Please ensure code is well-commented and consistent with the existing style.
-
----
 
 ## License
 
