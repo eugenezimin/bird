@@ -28,7 +28,7 @@ const header = {
   gap: 16,
   padding: '12px 16px',
   backdropFilter: 'blur(12px)',
-  background: 'rgba(0,0,0,0.75)',
+  background: 'rgba(4, 76, 118, 0.75)',
   borderBottom: '1px solid var(--border)',
 };
 
