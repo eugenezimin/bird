@@ -32,7 +32,7 @@ The **Twitter Service** handles everything related to messages (tweets) and prod
 
 ## Database Schema
 
-```
+```mermaid
 erDiagram
     messages {
         BINARY_16 id PK "UUID_TO_BIN · idx PK"
@@ -56,7 +56,7 @@ erDiagram
 
 ## Service-to-Service Communication
 
-```
+```mermaid
 sequenceDiagram
     participant Client
     participant Twitter as Twitter Service
@@ -195,7 +195,7 @@ ums:
 
 ## Build & Run
 
-> UMS **must be running** before starting the Twitter service. On startup, the Twitter service will attempt to reach UMS to validate connections.
+To build and run use the following commands.
 
 ```bash
 cd $HOME/bird/twitter
