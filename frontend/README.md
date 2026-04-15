@@ -4,7 +4,22 @@
 
 The Bird frontend is a single-page React application that provides a Twitter-like UI over the two backend microservices. It is intentionally structured as a real-world application rather than a tutorial toy — with a proper API layer, global state management, and reusable component library.
 
----
+## Screenshots
+
+![Main View](./images/my_feed.png)
+Main View
+
+![Explore Subscriptions](./images/explore.png)
+Explore Subscriptions
+
+![My Feed](./images/my_feed.png)
+My Feed
+
+![My Profile](./images/profile.png)
+My Profile
+
+![New Post](./images/new_post.png)
+New Post
 
 ## Tech Stack
 
@@ -18,8 +33,6 @@ The Bird frontend is a single-page React application that provides a Twitter-lik
 | Date formatting | date-fns | 3.6 |
 | Linting | ESLint + eslint-plugin-react | 9 |
 | Formatting | Prettier | — |
-
----
 
 ## Pages & Routing
 
@@ -35,8 +48,6 @@ The Bird frontend is a single-page React application that provides a Twitter-lik
 ```
 
 All routes except `/` and `/login` are rendered inside `AppLayout`, which includes the persistent sidebar navigation.
-
----
 
 ## Application Structure
 
@@ -106,8 +117,6 @@ frontend/src/
     └── globals.css             ← CSS custom properties (design tokens)
 ```
 
----
-
 ## API Layer
 
 Each backend service gets its own Axios instance with a pre-configured base URL:
@@ -128,8 +137,6 @@ const twitterClient = axios.create({
 
 All API responses follow the envelope pattern `{ code, message, data }`. The `safeExtract` utility unwraps `data` consistently across the app.
 
----
-
 ## State Management
 
 Zustand is used for lightweight global state. The primary store holds the currently selected user:
@@ -144,8 +151,6 @@ const useUserStore = create((set) => ({
 
 Local component state (`useState`) is used for everything else (loading flags, form values, fetched lists).
 
----
-
 ## Environment Variables
 
 Create a `.env` file in the `frontend/` directory (copy from `.env.example`):
@@ -156,8 +161,6 @@ VITE_TWITTER_BASE_URL=http://localhost:9001
 ```
 
 Variables must be prefixed with `VITE_` to be exposed to the browser by Vite.
-
----
 
 ## Setup & Run
 
@@ -184,8 +187,6 @@ npm run preview  # Serve the production build locally
 npm run lint     # ESLint checks
 ```
 
----
-
 ## Notable Patterns
 
 **No authentication (yet)** — The `UserSelectPage` shows all 12 seed users and lets you "log in" by clicking one. The selected user is stored in Zustand and used to scope API calls (e.g., fetching their feed, composing as them). Proper auth is a future phase.
@@ -197,7 +198,5 @@ npm run lint     # ESLint checks
 **`extractData` utility** — All API calls go through this helper (`utils/extractData.js`), which safely reaches into the `{ code, message, data }` envelope and returns `data`, or a configurable fallback on error. This prevents `undefined` errors propagating into components.
 
 **CSS custom properties** — Design tokens (colours, spacing, border radius, font sizes) are defined as CSS variables in `globals.css` and referenced throughout components. This makes theming straightforward.
-
----
 
 [← Back to root README](../README.md) | [UMS Service →](../ums/README.md) | [Twitter Service →](../twitter/README.md) 
