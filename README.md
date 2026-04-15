@@ -1,7 +1,8 @@
 # Local Twitter application — Twitter Clone
 
-> A microservice-based Twitter/X clone built for **CST8277 Enterprise Application Programming** at Algonquin College.
-> The goal is to demonstrate microservice architecture in practice — its benefits, trade-offs, and implementation patterns — while guiding students through building the same system step by step.
+A microservice-based Twitter/X clone built for **CST8277 Enterprise Application Programming** at Algonquin College in Ottawa, ON.
+
+The goal is to demonstrate microservice architecture in practice — its benefits, trade-offs, and implementation patterns — while guiding students through building the same system step by step.
 
 ## Documentation
 
