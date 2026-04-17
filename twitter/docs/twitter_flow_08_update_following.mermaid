@@ -1,0 +1,9 @@
+---
+title: "Update following list (Subscriber)"
+---
+flowchart TD
+    A([Subscriber wants to change who they follow]) --> B[/Selects a new list of producers to follow/]
+    B --> C{User is a Subscriber?}
+    C -- No --> D([Rejected — must have Subscriber role])
+    C -- Yes --> E[Old following list is replaced with new selection]
+    E --> F([Following list updated — feed will reflect changes])

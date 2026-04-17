@@ -1,0 +1,8 @@
+---
+title: "Browse all posts (Any user)"
+---
+flowchart TD
+    A([User opens the global timeline]) --> B[Requests all posts]
+    B --> C{Any posts in the system?}
+    C -- No --> D([Empty — no posts yet])
+    C -- Yes --> E([All posts shown newest first])

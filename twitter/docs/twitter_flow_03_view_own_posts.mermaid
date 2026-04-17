@@ -1,0 +1,8 @@
+---
+title: "View own posts (Producer)"
+---
+flowchart TD
+    A([Producer opens their profile]) --> B[Requests their own posts]
+    B --> C{Any posts written?}
+    C -- No --> D([Empty — no posts yet])
+    C -- Yes --> E([Posts shown newest first])

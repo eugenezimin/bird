@@ -1,0 +1,10 @@
+---
+title: "Open personal feed (Subscriber)"
+---
+flowchart TD
+    A([Subscriber opens their feed]) --> B[System fetches posts from everyone they follow]
+    B --> C{Following anyone?}
+    C -- No --> D([Feed empty — not following anyone yet])
+    C -- Yes --> E{Any posts from followed producers?}
+    E -- No --> F([Feed empty — nobody has posted yet])
+    E -- Yes --> G([Feed shown newest first])

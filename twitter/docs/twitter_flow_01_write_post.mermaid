@@ -1,0 +1,11 @@
+---
+title: "Write a post (Producer)"
+---
+flowchart TD
+    A([Producer decides to write a post]) --> B[/Compose text up to 280 characters/]
+    B --> C{Text is not empty?}
+    C -- No --> B
+    C -- Yes --> D[Submit post]
+    D --> E{Confirmed as a Producer?}
+    E -- No --> F([Rejected — must have Producer role])
+    E -- Yes --> G([Post published and visible to followers])

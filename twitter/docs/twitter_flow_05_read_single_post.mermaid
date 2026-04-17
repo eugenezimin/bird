@@ -1,0 +1,8 @@
+---
+title: "Read a single post (Any user)"
+---
+flowchart TD
+    A([User clicks on a specific post]) --> B[System looks up that post]
+    B --> C{Post found?}
+    C -- No --> D([Post not found])
+    C -- Yes --> E([Post detail shown])

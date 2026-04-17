@@ -1,0 +1,12 @@
+---
+title: "Follow a producer (Subscriber)"
+---
+flowchart TD
+    A([Subscriber finds a producer to follow]) --> B[Requests to follow them]
+    B --> C{User is a Subscriber?}
+    C -- No --> D([Rejected — must have Subscriber role])
+    C -- Yes --> E{Target user is a Producer?}
+    E -- No --> F([Rejected — target must have Producer role])
+    E -- Yes --> G{Already following?}
+    G -- Yes --> H([No change — already following])
+    G -- No --> I([Now following — their posts will appear in feed])

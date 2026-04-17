@@ -4,7 +4,6 @@
 
 The **Twitter Service** handles everything related to messages (tweets) and producer–subscriber relationships. It is deliberately stateless with respect to user identity: it stores `author_id` / `subscriber_id` / `producer_id` as UUIDs but delegates all user validation to UMS via an internal HTTP call before every write operation.
 
----
 
 ## Responsibilities
 
@@ -13,7 +12,36 @@ The **Twitter Service** handles everything related to messages (tweets) and prod
 - Fetch a subscriber's personalized feed (messages from followed producers)
 - Validate user roles by calling UMS before any write
 
----
+## Functionality
+
+Service provides the following functionality:
+
+- **Producer actions:** write a post, delete own post, view own posts
+- **Subscriber actions:** open personal feed, follow someone, unfollow all, update who they follow, view who they follow
+- **Any user:** browse all posts, read a single post
+
+#### Producer (needs the Producer role)
+| # | Flow | What the user wants |
+|---|---|---|
+| 01 | ![Write a post](./docs/twitter_flow_01_write_post.mermaid) | Compose and publish up to 280 characters |
+| 02 | Delete a post | Remove one of their own posts permanently |
+| 03 | View own posts | See everything they've published |
+
+##### Any user (no role required)
+| # | Flow | What the user wants |
+|---|---|---|
+| 04 | Browse all posts | See the global timeline |
+| 05 | Read a single post | Open one specific post |
+
+#### Subscriber (needs the Subscriber role)
+| # | Flow | What the user wants |
+|---|---|---|
+| 06 | Open personal feed | See posts only from people they follow |
+| 07 | Follow a producer | Add one producer to their feed |
+| 08 | Update following list | Replace their entire following list at once |
+| 09 | Unfollow everyone | Clear all subscriptions in one action |
+| 10 | View following list | See who they currently follow |
+
 
 ## Tech Stack
 
@@ -28,7 +56,6 @@ The **Twitter Service** handles everything related to messages (tweets) and prod
 | Build | Gradle 9.4.1 |
 | Boilerplate | Lombok |
 
----
 
 ## Database Schema
 
@@ -52,7 +79,6 @@ erDiagram
 
 > **Cross-database FKs** — MySQL does not support foreign keys across databases. Referential integrity between `twitter.messages.author_id` and `ums.users.id` is enforced in the application layer: every write first calls UMS to confirm the user exists and holds the correct role.
 
----
 
 ## Service-to-Service Communication
 
@@ -88,7 +114,6 @@ sequenceDiagram
 
 The `UMSConnector` bean holds a pre-configured `WebClient` pointing at `http://localhost:9000`. All role checks return `Mono<>` chains — no threads are blocked waiting for UMS to respond.
 
----
 
 ## API Endpoints
 
@@ -119,7 +144,6 @@ All responses use the same standard envelope as UMS:
 | `POST` | `/subscriptions/subscriber/{subId}/producer/{prodId}` | `subId` must be `SUBSCRIBER`, `prodId` must be `PRODUCER` | Follow a producer |
 | `DELETE` | `/subscriptions/subscriber/{id}` | — | Unfollow all (delete all subscriptions for subscriber) |
 
----
 
 ## Feed Query
 
@@ -133,7 +157,6 @@ WHERE s.subscriber_id = UUID_TO_BIN(?)
 ORDER BY m.created_at DESC
 ```
 
----
 
 ## Package Structure
 
@@ -167,7 +190,6 @@ com.ziminpro.twitter/
     └── Constants.java              ← All SQL strings + URI paths
 ```
 
----
 
 ## Configuration
 
@@ -191,7 +213,6 @@ ums:
     user: /users/user
 ```
 
----
 
 ## Build & Run
 
@@ -205,7 +226,6 @@ gradle build
 java -jar build/libs/twitter-2.0.jar
 ```
 
----
 
 ## Notable Implementation Details
 
@@ -217,6 +237,5 @@ java -jar build/libs/twitter-2.0.jar
 
 **`JacksonConfig`** — A `@Primary` `ObjectMapper` bean registers `JavaTimeModule` and disables `WRITE_DATES_AS_TIMESTAMPS`. Without this, `LocalDateTime` fields serialize as numeric arrays like `[2024, 11, 12, 14, 38, 29]` instead of `"2024-11-12T14:38:29"`.
 
----
 
 [← Back to root README](../README.md) | [UMS Service →](../ums/README.md) | [Frontend →](../frontend/README.md)

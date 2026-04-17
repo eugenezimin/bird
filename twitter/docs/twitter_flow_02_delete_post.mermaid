@@ -1,0 +1,8 @@
+---
+title: "Delete a post (Producer)"
+---
+flowchart TD
+    A([Producer sees their post]) --> B[Chooses to delete it]
+    B --> C{Post exists?}
+    C -- No --> D([Nothing to delete])
+    C -- Yes --> E([Post permanently removed])

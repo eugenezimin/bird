@@ -4,8 +4,6 @@
 
 The **User Management Service (UMS)** is the identity backbone of the Bird platform. It owns all user accounts, role assignments, and session records. Every other service trusts UMS as the single source of truth for authentication and authorization.
 
----
-
 ## Responsibilities
 
 - CRUD operations on user accounts
@@ -13,7 +11,88 @@ The **User Management Service (UMS)** is the identity backbone of the Bird platf
 - Many-to-many user ↔ role assignment
 - Session lifecycle (open / close / query)
 
----
+## Functionality
+
+`UserManagementService` or `UMS` serves User domain with all its related subdomains, including Users themselves, Roles, and Sessions.
+
+Its functionality from the customer prospective view is possible to show on the following action diagrams below.
+
+UMS user action flows:
+
+- Account management — a user (or admin) registers, views their profile, updates it, or deletes the account
+
+```mermaid
+flowchart TD
+    A([User wants to manage their account]) --> B{What action?}
+
+    B --> C[Register]
+    B --> D[View profile]
+    B --> E[Update profile]
+    B --> F[Delete account]
+
+    C --> C1[Provide name, email, password]
+    C1 --> C2{Email already taken?}
+    C2 -- Yes --> C3([Show error: email in use])
+    C2 -- No --> C4([Account created])
+
+    D --> D1{User exists?}
+    D1 -- No --> D2([Show error: not found])
+    D1 -- Yes --> D3([Show profile + roles])
+
+    E --> E1[Provide new name / email / password]
+    E1 --> E2{User exists?}
+    E2 -- No --> E3([Show error: not found])
+    E2 -- Yes --> E4([Profile updated])
+
+    F --> F1{User exists?}
+    F1 -- No --> F2([Show error: not found])
+    F1 -- Yes --> F3([Account deleted, sessions + roles removed])
+```
+
+- Role management — an admin assigns a role to a user
+
+```mermaid
+flowchart TD
+    A([Admin wants to manage user roles]) --> B[Browse available roles]
+    B --> B1([View role catalogue: ADMIN · PRODUCER · SUBSCRIBER])
+    B1 --> C{Assign a role to a user?}
+
+    C -- No --> Z([Done])
+    C -- Yes --> D[Select user + select role]
+    D --> E{User exists?}
+    E -- No --> E1([Show error: user not found])
+    E -- Yes --> F{Role already assigned?}
+    F -- Yes --> F1([No change, silently ignored])
+    F -- No --> G([Role assigned to user])
+    G --> C
+```
+
+- Session lifecycle — a user logs in (opens a session) and logs out (closes it); can also check their last session
+
+```mermaid
+flowchart TD
+    A([User wants to start using the platform]) --> B[Log in]
+    B --> C{User account exists?}
+    C -- No --> C1([Show error: user not found])
+    C -- Yes --> D([Session opened, session ID returned])
+
+    D --> E{What does the user do next?}
+
+    E -- Use the platform --> E1([Perform actions under active session])
+    E1 --> E
+
+    E -- Check last activity --> F[View last session]
+    F --> G{Any session on record?}
+    G -- No --> G1([Show: no sessions found])
+    G -- Yes --> G2([Show: login time + logout time])
+    G2 --> E
+
+    E -- Log out --> H[Close session]
+    H --> I{Session found?}
+    I -- No --> I1([Show error: session not found])
+    I -- Yes --> J([Session closed, logged_out_at recorded])
+    J --> K([User is logged out])
+```
 
 ## Tech Stack
 
@@ -26,8 +105,6 @@ The **User Management Service (UMS)** is the identity backbone of the Bird platf
 | JSON | Jackson + `JavaTimeModule` (ISO-8601 dates) |
 | Build | Gradle 9.4.1 |
 | Boilerplate | Lombok (`@Data`, `@AllArgsConstructor`, etc.) |
-
----
 
 ## Database Schema
 
@@ -67,8 +144,6 @@ erDiagram
 
 > **Why `BINARY(16)`?** UUIDs stored as `CHAR(36)` waste space and slow index operations. `BINARY(16)` stores the raw 16 bytes — half the size — and uses `UUID_TO_BIN()` / `BIN_TO_UUID()` in every SQL statement to convert transparently.
 
----
-
 ## API Endpoints
 
 Base URL: `http://localhost:9000`
@@ -107,7 +182,49 @@ All responses use a standard JSON envelope:
 | `GET` | `/sessions/user/{userId}/last` | Get the user's most recent session |
 | `PUT` | `/sessions/{sessionId}/close` | Close a session (sets `logged_out_at`) |
 
----
+## Component diagram
+
+```mermaid
+C4Component
+  System_Boundary(ums, "UMS — Spring Boot / WebFlux · port 9000") {
+
+    Container_Boundary(controllers, "controllers") {
+      Component(uc, "UserController", "REST Controller", "Handles /users endpoints")
+      Component(rc, "RolesController", "REST Controller", "Handles /roles endpoint")
+      Component(sc, "SessionController", "REST Controller", "Handles /sessions endpoints")
+    }
+
+    Container_Boundary(dtos, "dtos") {
+      Component(user_dto, "User", "DTO", "User + List<Role>")
+      Component(role_dto, "Roles", "DTO", "Role id, name, description")
+      Component(session_dto, "LastSession", "DTO", "Session id, logged_in_at, logged_out_at")
+      Component(constants, "Constants", "SQL + HTTP constants", "All SQL strings and HTTP header keys")
+    }
+
+    Container_Boundary(dao, "dao") {
+      Component(repo_if, "UmsRepository", "Interface", "Contract for all DB operations")
+      Component(repo, "JdbcUmsRepository", "JdbcTemplate Impl", "Executes SQL; collapses multi-role rows")
+      Component(helper, "DaoHelper", "Utility", "Converts BINARY(16) bytes to UUID and back")
+    }
+
+  }
+
+  Rel(uc, repo_if, "calls")
+  Rel(rc, repo_if, "calls")
+  Rel(sc, repo_if, "calls")
+
+  Rel(uc, constants, "uses")
+  Rel(rc, constants, "uses")
+  Rel(sc, constants, "uses")
+
+  Rel(repo_if, repo, "implemented by")
+  Rel(repo, helper, "uses")
+  Rel(repo, constants, "reads SQL from")
+
+  Rel(repo, user_dto, "maps rows to")
+  Rel(repo, role_dto, "maps rows to")
+  Rel(repo, session_dto, "maps rows to")
+```
 
 ## Package Structure
 
@@ -131,8 +248,6 @@ com.ziminpro.ums/
     └── Constants.java               ← All SQL strings centralised here
 ```
 
----
-
 ## Configuration
 
 `src/main/resources/application.yaml`:
@@ -149,8 +264,6 @@ spring:
     password: passw
 ```
 
----
-
 ## Build & Run
 
 ```bash
@@ -162,8 +275,6 @@ gradle build
 # Run
 java-jar build/libs/ums-2.0.jar
 ```
----
-
 ## Notable Implementation Details
 
 **SQL centralised in `Constants.java`** — All SQL strings live as `public static final String` constants. This keeps DAO classes clean and SQL changes easy to locate without an ORM.
@@ -173,7 +284,5 @@ java-jar build/libs/ums-2.0.jar
 **`ON UPDATE CURRENT_TIMESTAMP`** — The `users.updated_at` column updates automatically on every `UPDATE` at the database level, requiring no application-side logic.
 
 **Session history** — Rather than a simple "last login" column, a `sessions` table records every login and logout, enabling full audit capability and concurrent session detection.
-
----
 
 [← Back to root README](../README.md) | [Twitter Service →](../twitter/README.md) | [Frontend →](../frontend/README.md)

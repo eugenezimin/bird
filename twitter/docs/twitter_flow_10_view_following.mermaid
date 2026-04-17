@@ -1,0 +1,8 @@
+---
+title: "View following list (Subscriber)"
+---
+flowchart TD
+    A([Subscriber wants to see who they follow]) --> B[Requests their subscription list]
+    B --> C{Following anyone?}
+    C -- No --> D([Not following anyone yet])
+    C -- Yes --> E([List of followed producers shown])
