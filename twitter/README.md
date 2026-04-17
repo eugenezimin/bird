@@ -23,7 +23,7 @@ Service provides the following functionality:
 #### Producer (needs the Producer role)
 | # | Flow | What the user wants |
 |---|---|---|
-| 01 | ![Write a post](./docs/twitter_flow_01_write_post.mermaid) | Compose and publish up to 280 characters |
+| 01 | [Write a post](./docs/twitter_flow_01_write_post.mermaid) | Compose and publish up to 280 characters |
 | 02 | Delete a post | Remove one of their own posts permanently |
 | 03 | View own posts | See everything they've published |
 
