@@ -24,23 +24,23 @@ Service provides the following functionality:
 | # | Flow | What the user wants |
 |---|---|---|
 | 01 | [Write a post](./docs/twitter_flow_01_write_post.mermaid) | Compose and publish up to 280 characters |
-| 02 | Delete a post | Remove one of their own posts permanently |
-| 03 | View own posts | See everything they've published |
+| 02 | [Delete a post](./docs/twitter_flow_02_delete_post.mermaid) | Remove one of their own posts permanently |
+| 03 | [View own posts](./docs/twitter_flow_03_view_own_posts.mermaid) | See everything they've published |
 
 ##### Any user (no role required)
 | # | Flow | What the user wants |
 |---|---|---|
-| 04 | Browse all posts | See the global timeline |
-| 05 | Read a single post | Open one specific post |
+| 04 | [Browse all posts](./docs/twitter_flow_04_browse_all_posts.mermaid) | See the global timeline |
+| 05 | [Read a single post](./docs/twitter_flow_05_read_single_post.mermaid) | Open one specific post |
 
 #### Subscriber (needs the Subscriber role)
 | # | Flow | What the user wants |
 |---|---|---|
-| 06 | Open personal feed | See posts only from people they follow |
-| 07 | Follow a producer | Add one producer to their feed |
-| 08 | Update following list | Replace their entire following list at once |
-| 09 | Unfollow everyone | Clear all subscriptions in one action |
-| 10 | View following list | See who they currently follow |
+| 06 | [Open personal feed](./docs/twitter_flow_06_open_feed.mermaid) | See posts only from people they follow |
+| 07 | [Follow a producer](./docs/twitter_flow_07_follow_producer.mermaid) | Add one producer to their feed |
+| 08 | [Update following list](./docs/twitter_flow_08_update_following.mermaid) | Replace their entire following list at once |
+| 09 | [Unfollow everyone](./docs/twitter_flow_09_unfollow_all.mermaid) | Clear all subscriptions in one action |
+| 10 | [View following list](./docs/twitter_flow_10_view_following.mermaid) | See who they currently follow |
 
 
 ## Tech Stack
