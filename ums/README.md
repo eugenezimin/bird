@@ -185,45 +185,53 @@ All responses use a standard JSON envelope:
 ## Component diagram
 
 ```mermaid
-C4Component
-  System_Boundary(ums, "UMS — Spring Boot / WebFlux · port 9000") {
+flowchart TB
 
-    Container_Boundary(controllers, "controllers") {
-      Component(uc, "UserController", "REST Controller", "Handles /users endpoints")
-      Component(rc, "RolesController", "REST Controller", "Handles /roles endpoint")
-      Component(sc, "SessionController", "REST Controller", "Handles /sessions endpoints")
-    }
+    Client([Client])
+    Twitter([Twitter Service :9001])
+    DB[(MySQL ums DB)]
 
-    Container_Boundary(dtos, "dtos") {
-      Component(user_dto, "User", "DTO", "User + List<Role>")
-      Component(role_dto, "Roles", "DTO", "Role id, name, description")
-      Component(session_dto, "LastSession", "DTO", "Session id, logged_in_at, logged_out_at")
-      Component(constants, "Constants", "SQL + HTTP constants", "All SQL strings and HTTP header keys")
-    }
+    subgraph CONFIG[config]
+        CorsConfig[CorsConfig]
+    end
 
-    Container_Boundary(dao, "dao") {
-      Component(repo_if, "UmsRepository", "Interface", "Contract for all DB operations")
-      Component(repo, "JdbcUmsRepository", "JdbcTemplate Impl", "Executes SQL; collapses multi-role rows")
-      Component(helper, "DaoHelper", "Utility", "Converts BINARY(16) bytes to UUID and back")
-    }
+    subgraph CONTROLLERS[controllers]
+        UserController[UserController]
+        RolesController[RolesController]
+        SessionController[SessionController]
+    end
 
-  }
+    subgraph DAO[dao]
+        UmsRepository[UmsRepository interface]
+        JdbcUmsRepository[JdbcUmsRepository]
+        DaoHelper[DaoHelper]
+    end
 
-  Rel(uc, repo_if, "calls")
-  Rel(rc, repo_if, "calls")
-  Rel(sc, repo_if, "calls")
+    subgraph DTOS[dtos]
+        User[User]
+        Roles[Roles]
+        LastSession[LastSession]
+        Constants[Constants]
+    end
 
-  Rel(uc, constants, "uses")
-  Rel(rc, constants, "uses")
-  Rel(sc, constants, "uses")
+    Client -->|HTTP :9000| UserController
+    Client -->|HTTP :9000| RolesController
+    Client -->|HTTP :9000| SessionController
+    Twitter -->|WebClient GET /users/user/id| UserController
 
-  Rel(repo_if, repo, "implemented by")
-  Rel(repo, helper, "uses")
-  Rel(repo, constants, "reads SQL from")
+    UserController --> UmsRepository
+    RolesController --> UmsRepository
+    SessionController --> UmsRepository
 
-  Rel(repo, user_dto, "maps rows to")
-  Rel(repo, role_dto, "maps rows to")
-  Rel(repo, session_dto, "maps rows to")
+    UmsRepository -.->|implements| JdbcUmsRepository
+
+    JdbcUmsRepository --> DaoHelper
+    JdbcUmsRepository -->|JDBC| DB
+    JdbcUmsRepository --> Constants
+
+    JdbcUmsRepository --> User
+    JdbcUmsRepository --> Roles
+    JdbcUmsRepository --> LastSession
 ```
 
 ## Package Structure

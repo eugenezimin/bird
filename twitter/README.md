@@ -42,6 +42,85 @@ Service provides the following functionality:
 | 09 | [Unfollow everyone](./docs/twitter_flow_09_unfollow_all.mermaid) | Clear all subscriptions in one action |
 | 10 | [View following list](./docs/twitter_flow_10_view_following.mermaid) | See who they currently follow |
 
+## Functional diagram
+
+Internally service looks like as follows:
+
+```mermaid
+
+flowchart TB
+
+    Client([Client])
+    UMS([UMS Service :9000])
+    DB[(MySQL twitter DB)]
+
+    subgraph CONFIG[config]
+        CorsConfig[CorsConfig]
+        JacksonConfig[JacksonConfig]
+        GlobalExceptionHandler[GlobalExceptionHandler]
+    end
+
+    subgraph CONTROLLERS[controllers]
+        MessageController[MessageController]
+        SubscriptionController[SubscriptionController]
+    end
+
+    subgraph SERVICES[services]
+        MessagesService[MessagesService]
+        SubscriptionsService[SubscriptionsService]
+        UMSConnector[UMSConnector]
+    end
+
+    subgraph DAO[dao]
+        MessageRepository[MessageRepository interface]
+        JdbcMessageRepository[JdbcMessageRepository]
+        SubscriptionRepository[SubscriptionRepository interface]
+        JdbcSubscriptionRepository[JdbcSubscriptionRepository]
+        DaoHelper[DaoHelper]
+    end
+
+    subgraph DTOS[dtos]
+        Message[Message]
+        Subscription[Subscription]
+        User[User]
+        Roles[Roles]
+        HttpResponseExtractor[HttpResponseExtractor]
+        Constants[Constants]
+    end
+
+    Client -->|HTTP :9001| MessageController
+    Client -->|HTTP :9001| SubscriptionController
+
+    MessageController --> MessagesService
+    SubscriptionController --> SubscriptionsService
+
+    MessagesService --> UMSConnector
+    SubscriptionsService --> UMSConnector
+    UMSConnector -->|WebClient| UMS
+
+    MessagesService --> MessageRepository
+    SubscriptionsService --> SubscriptionRepository
+
+    MessageRepository -.->|implements| JdbcMessageRepository
+    SubscriptionRepository -.->|implements| JdbcSubscriptionRepository
+
+    JdbcMessageRepository --> DaoHelper
+    JdbcSubscriptionRepository --> DaoHelper
+
+    JdbcMessageRepository -->|JDBC| DB
+    JdbcSubscriptionRepository -->|JDBC| DB
+
+    JdbcMessageRepository --> Constants
+    JdbcSubscriptionRepository --> Constants
+
+    UMSConnector --> HttpResponseExtractor
+    HttpResponseExtractor --> User
+    User --> Roles
+
+    JdbcMessageRepository --> Message
+    JdbcSubscriptionRepository --> Subscription
+```
+
 
 ## Tech Stack
 
