@@ -27,7 +27,7 @@ curl -s -X POST http://localhost:9000/users/user \
   }' | jq
 ```
 
-**Update a user**
+**Update a user** *(full replacement — replaces all fields including roles)*
 ```bash
 curl -s -X PUT http://localhost:9000/users/user/6e27ea06-a716-4c89-af88-813749a8bd48 \
   -H "Content-Type: application/json" \
@@ -42,14 +42,34 @@ curl -s -X PUT http://localhost:9000/users/user/6e27ea06-a716-4c89-af88-813749a8
   }' | jq
 ```
 
+**Patch a user** *(partial update — only the fields you include are changed; roles are untouched)*
+```bash
+curl -s -X PATCH http://localhost:9000/users/user/6e27ea06-a716-4c89-af88-813749a8bd48 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Donald J. Trump"
+  }' | jq
+```
+
 **Delete a user**
 ```bash
 curl -s -X DELETE http://localhost:9000/users/user/6e27ea06-a716-4c89-af88-813749a8bd48 | jq
 ```
 
+---
+
+## UMS Roles (port 9000)
+
 **Get all roles**
 ```bash
 curl -s http://localhost:9000/roles | jq
+```
+
+**Assign a role to a user** *(idempotent — safe to call even if already assigned)*
+```bash
+curl -s -X POST \
+  http://localhost:9000/users/user/6e27ea06-a716-4c89-af88-813749a8bd48/role/b479b357-7e25-47fa-8dba-bfdaeecc6c2c \
+  | jq
 ```
 
 ---

@@ -27,7 +27,7 @@ tags:
   - name: UMS / Users
     description: CRUD operations on user accounts
   - name: UMS / Roles
-    description: Role catalogue
+    description: Role catalogue and role assignment
   - name: UMS / Sessions
     description: Session lifecycle management
   - name: Twitter / Messages
@@ -159,7 +159,11 @@ paths:
                 data: {}
     put:
       tags: [UMS / Users]
-      summary: Update a user
+      summary: Update a user (full replacement)
+      description: >
+        Replaces all mutable fields (name, email, passwordHash) and re-syncs
+        the role list entirely. Send every field you want to keep — absent
+        fields are not preserved. Use PATCH for partial updates.
       operationId: updateUser
       requestBody:
         required: true
@@ -192,6 +196,63 @@ paths:
                     code: "404"
                     message: User not found or not updated
                     data: false
+    patch:
+      tags: [UMS / Users]
+      summary: Patch a user (partial update)
+      description: >
+        Applies only the fields present in the request body. Absent fields are
+        left unchanged. Roles are **not** affected by PATCH — use PUT to
+        replace the role list.  At least one of `name`, `email`, or
+        `passwordHash` must be provided; an empty body returns 400.
+        On success the response contains the refreshed user object.
+      operationId: patchUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPatch"
+            examples:
+              nameOnly:
+                summary: Change display name only
+                value:
+                  name: Donald J. Trump
+              emailAndPassword:
+                summary: Rotate email and password together
+                value:
+                  email: djt@trump.us
+                  passwordHash: supersecret123
+      responses:
+        "200":
+          description: Patch result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeUser"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: User 6e27ea06-a716-4c89-af88-813749a8bd48 patched successfully
+                    data:
+                      id: 6e27ea06-a716-4c89-af88-813749a8bd48
+                      name: Donald J. Trump
+                      email: donald@trump.us
+                      createdAt: "2020-07-31T08:00:00"
+                      roles:
+                        - roleId: eb932dbb-7005-422f-a649-7190af39e984
+                          role: PRODUCER
+                          description: Message content producer
+                notFound:
+                  value:
+                    code: "404"
+                    message: User 6e27ea06-a716-4c89-af88-813749a8bd48 not found
+                    data: false
+                emptyBody:
+                  value:
+                    code: "400"
+                    message: "Request body must contain at least one of: name, email, passwordHash"
+                    data: false
     delete:
       tags: [UMS / Users]
       summary: Delete a user
@@ -213,6 +274,45 @@ paths:
                   value:
                     code: "404"
                     message: User not found or already deleted
+                    data: false
+
+  /users/user/{userId}/role/{roleId}:
+    servers:
+      - url: http://localhost:9000
+    parameters:
+      - $ref: "#/components/parameters/userId"
+      - $ref: "#/components/parameters/roleId"
+    post:
+      tags: [UMS / Roles]
+      summary: Assign a role to a user
+      description: >
+        Assigns an existing role to an existing user. The operation is
+        idempotent — calling it when the role is already assigned returns
+        200 without error. Both the user and the role must exist; otherwise
+        404 is returned inside the envelope.
+      operationId: assignRole
+      responses:
+        "200":
+          description: Assignment result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: Role assigned to user 6e27ea06-a716-4c89-af88-813749a8bd48
+                    data: true
+                userNotFound:
+                  value:
+                    code: "404"
+                    message: User 6e27ea06-a716-4c89-af88-813749a8bd48 not found
+                    data: false
+                roleNotFound:
+                  value:
+                    code: "404"
+                    message: Role b479b357-7e25-47fa-8dba-bfdaeecc6c2c not found
                     data: false
 
   # =========================================================================
@@ -286,11 +386,11 @@ paths:
       - $ref: "#/components/parameters/userId"
     get:
       tags: [UMS / Sessions]
-      summary: Get the last session for a user
+      summary: Get the most recent session for a user
       operationId: getLastSession
       responses:
         "200":
-          description: Last session data
+          description: Last session found or not found
           content:
             application/json:
               schema:
@@ -317,11 +417,11 @@ paths:
       - $ref: "#/components/parameters/sessionId"
     delete:
       tags: [UMS / Sessions]
-      summary: Close an existing session
+      summary: Close a session
       operationId: closeSession
       responses:
         "200":
-          description: Session close result
+          description: Close result
           content:
             application/json:
               schema:
@@ -342,13 +442,36 @@ paths:
   # Twitter — Messages
   # =========================================================================
 
+  /messages:
+    servers:
+      - url: http://localhost:9001
+    get:
+      tags: [Twitter / Messages]
+      summary: Get all messages
+      operationId: getAllMessages
+      responses:
+        "200":
+          description: All messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeMessageList"
+              example:
+                code: "200"
+                message: Messages retrieved successfully
+                data:
+                  - id: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
+                    author: 6e27ea06-a716-4c89-af88-813749a8bd48
+                    content: "Making America Great Again — one tweet at a time."
+                    createdAt: "2024-01-15T10:30:00"
+
   /messages/message:
     servers:
       - url: http://localhost:9001
     post:
       tags: [Twitter / Messages]
       summary: Create a new message
-      description: The author must have the PRODUCER role in UMS.
+      description: The author must hold the PRODUCER role in UMS, otherwise 403 is returned.
       operationId: createMessage
       requestBody:
         required: true
@@ -402,17 +525,17 @@ paths:
                     data:
                       id: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
                       author: 6e27ea06-a716-4c89-af88-813749a8bd48
-                      content: Donald Trump posted his first message
-                      timestamp: 1605194709
+                      content: "Making America Great Again — one tweet at a time."
+                      createdAt: "2024-01-15T10:30:00"
                 notFound:
                   value:
                     code: "404"
                     message: Message not found
-                    data: {}
+                    data: null
     delete:
       tags: [Twitter / Messages]
       summary: Delete a message by ID
-      operationId: deleteMessage
+      operationId: deleteMessageById
       responses:
         "200":
           description: Deletion result
@@ -424,12 +547,12 @@ paths:
                 success:
                   value:
                     code: "200"
-                    message: Message e5c6f13a-76d6-48b6-81f0-20b74fa9f04c successfully deleted
+                    message: Message deleted
                     data: true
-                failed:
+                notFound:
                   value:
-                    code: "500"
-                    message: Message e5c6f13a-76d6-48b6-81f0-20b74fa9f04c has not been deleted
+                    code: "404"
+                    message: Message not found or already deleted
                     data: false
 
   /messages/producer/{producerId}:
@@ -445,11 +568,11 @@ paths:
         example: 6e27ea06-a716-4c89-af88-813749a8bd48
     get:
       tags: [Twitter / Messages]
-      summary: Get all messages by a producer
+      summary: Get all messages for a producer
       operationId: getMessagesByProducer
       responses:
         "200":
-          description: List of messages (empty array if none found)
+          description: Messages for the producer
           content:
             application/json:
               schema:
@@ -458,16 +581,16 @@ paths:
                 found:
                   value:
                     code: "200"
-                    message: List of messages has been requested successfully
+                    message: Messages retrieved successfully
                     data:
                       - id: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
                         author: 6e27ea06-a716-4c89-af88-813749a8bd48
-                        content: Donald Trump posted his first message
-                        timestamp: 1605194709
+                        content: "Making America Great Again — one tweet at a time."
+                        createdAt: "2024-01-15T10:30:00"
                 notFound:
                   value:
                     code: "404"
-                    message: Either producer didn't produce any messages or producer not found
+                    message: No messages found for producer 6e27ea06-a716-4c89-af88-813749a8bd48
                     data: []
 
   /messages/subscriber/{subscriberId}:
@@ -483,12 +606,11 @@ paths:
         example: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
     get:
       tags: [Twitter / Messages]
-      summary: Get all messages for a subscriber (their feed)
-      description: Returns messages from all producers the subscriber follows. The subscriber must have the SUBSCRIBER role in UMS.
+      summary: Get all messages for a subscriber (from their followed producers)
       operationId: getMessagesBySubscriber
       responses:
         "200":
-          description: Feed messages (empty array if no subscriptions or not a subscriber)
+          description: Messages from all producers the subscriber follows
           content:
             application/json:
               schema:
@@ -497,92 +619,21 @@ paths:
                 found:
                   value:
                     code: "200"
-                    message: List of messages has been requested successfully
+                    message: Messages retrieved successfully
                     data:
-                      - id: df7e3d8f-e19a-4458-bad6-4be7585200f5
-                        author: 1cd89e11-602a-4186-afbf-e0149b59eb08
-                        content: Mr. Macron would like to say hello!
-                        timestamp: 1605197637
+                      - id: e5c6f13a-76d6-48b6-81f0-20b74fa9f04c
+                        author: 6e27ea06-a716-4c89-af88-813749a8bd48
+                        content: "Making America Great Again — one tweet at a time."
+                        createdAt: "2024-01-15T10:30:00"
                 notFound:
                   value:
                     code: "404"
-                    message: Subscription not found or empty
+                    message: No messages found for subscriber 70a64b54-43c3-4c18-bbec-64590ff7e0cc
                     data: []
 
   # =========================================================================
   # Twitter — Subscriptions
   # =========================================================================
-
-  /subscriptions:
-    servers:
-      - url: http://localhost:9001
-    post:
-      tags: [Twitter / Subscriptions]
-      summary: Create a subscription
-      description: The subscriber must have the SUBSCRIBER role in UMS. Adds the subscriber row and all producer rows if they don't already exist.
-      operationId: createSubscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Subscription"
-            example:
-              subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
-              producers:
-                - 1cd89e11-602a-4186-afbf-e0149b59eb08
-                - 6e27ea06-a716-4c89-af88-813749a8bd48
-      responses:
-        "200":
-          description: Creation result
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EnvelopeBoolean"
-              examples:
-                success:
-                  value:
-                    code: "200"
-                    message: Subscription has been created
-                    data: true
-                failed:
-                  value:
-                    code: "500"
-                    message: Subscriptions has not been created
-                    data: false
-    put:
-      tags: [Twitter / Subscriptions]
-      summary: Update a subscription
-      description: Replaces the entire producer list for the given subscriber (delete + re-create internally).
-      operationId: updateSubscription
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Subscription"
-            example:
-              subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
-              producers:
-                - 1cd89e11-602a-4186-afbf-e0149b59eb08
-      responses:
-        "200":
-          description: Update result
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EnvelopeBoolean"
-              examples:
-                success:
-                  value:
-                    code: "201"
-                    message: Subscription has been updated
-                    data: true
-                failed:
-                  value:
-                    code: "500"
-                    message: Subscription has not been updated
-                    data: false
 
   /subscriptions/subscriber/{subscriberId}:
     servers:
@@ -597,11 +648,11 @@ paths:
         example: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
     get:
       tags: [Twitter / Subscriptions]
-      summary: Get subscription for a subscriber
+      summary: Get subscriptions for a subscriber
       operationId: getSubscription
       responses:
         "200":
-          description: Subscription data
+          description: Subscription record found or not found
           content:
             application/json:
               schema:
@@ -644,6 +695,76 @@ paths:
                     message: Subscription has not been deleted
                     data: false
 
+  /subscriptions:
+    servers:
+      - url: http://localhost:9001
+    post:
+      tags: [Twitter / Subscriptions]
+      summary: Create a subscription
+      description: The subscriber must hold the SUBSCRIBER role in UMS.
+      operationId: createSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription"
+            example:
+              subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+              producers:
+                - 1cd89e11-602a-4186-afbf-e0149b59eb08
+                - 6e27ea06-a716-4c89-af88-813749a8bd48
+      responses:
+        "200":
+          description: Creation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "201"
+                    message: Subscription has been created
+                    data: true
+                failed:
+                  value:
+                    code: "500"
+                    message: Subscription has not been created
+                    data: false
+    put:
+      tags: [Twitter / Subscriptions]
+      summary: Update a subscription (replaces producer list entirely)
+      operationId: updateSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Subscription"
+            example:
+              subscriber: 70a64b54-43c3-4c18-bbec-64590ff7e0cc
+              producers:
+                - 1cd89e11-602a-4186-afbf-e0149b59eb08
+      responses:
+        "200":
+          description: Update result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnvelopeBoolean"
+              examples:
+                success:
+                  value:
+                    code: "200"
+                    message: Subscription has been updated
+                    data: true
+                failed:
+                  value:
+                    code: "500"
+                    message: Subscription has not been updated
+                    data: false
+
 # ---------------------------------------------------------------------------
 # COMPONENTS
 # ---------------------------------------------------------------------------
@@ -658,6 +779,15 @@ components:
         type: string
         format: uuid
       example: 6e27ea06-a716-4c89-af88-813749a8bd48
+
+    roleId:
+      name: roleId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      example: b479b357-7e25-47fa-8dba-bfdaeecc6c2c
 
     sessionId:
       name: sessionId
@@ -746,6 +876,23 @@ components:
           items:
             $ref: "#/components/schemas/Role"
 
+    UserPatch:
+      type: object
+      description: >
+        Partial user update. At least one field must be present.
+        Absent fields are left unchanged. Roles are not affected.
+      properties:
+        name:
+          type: string
+          example: Donald J. Trump
+        email:
+          type: string
+          format: email
+          example: djt@trump.us
+        passwordHash:
+          type: string
+          example: supersecret123
+
     Message:
       type: object
       properties:
@@ -758,10 +905,9 @@ components:
         content:
           type: string
           maxLength: 280
-        timestamp:
-          type: integer
-          format: int64
-          description: Unix epoch seconds
+        createdAt:
+          type: string
+          format: date-time
 
     MessageCreate:
       type: object

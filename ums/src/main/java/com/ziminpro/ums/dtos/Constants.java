@@ -68,6 +68,17 @@ public class Constants {
     public static final String REMOVE_USER_ROLES =
         "DELETE FROM " + TABLE_USERS_ROLES + " WHERE user_id = UUID_TO_BIN(?)";
 
+    /** Check whether a role UUID exists — returns a count (0 or 1). */
+    public static final String GET_ROLE_BY_ID =
+        "SELECT COUNT(*) FROM `roles` WHERE id = UUID_TO_BIN(?)";
+
+    /**
+     * Assign a role to a user directly by both UUIDs.
+     * INSERT IGNORE means a duplicate (userId, roleId) pair is a safe no-op.
+     */
+    public static final String ASSIGN_ROLE_BY_ID =
+        "INSERT IGNORE INTO `users_roles` (user_id, role_id) " +
+        "VALUES (UUID_TO_BIN(?), UUID_TO_BIN(?))";
     // ----------------------------------------------------------------
     // Session queries
     // ----------------------------------------------------------------

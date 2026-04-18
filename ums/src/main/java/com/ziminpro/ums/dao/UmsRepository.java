@@ -18,6 +18,8 @@ public interface UmsRepository {
 
     // ---- Roles ----
     Map<String, Roles> findAllRoles();
+    boolean            roleExists(UUID roleId);
+    void               assignRole(UUID userId, UUID roleId);
 
     // ---- Sessions ----
     UUID        openSession(UUID userId);

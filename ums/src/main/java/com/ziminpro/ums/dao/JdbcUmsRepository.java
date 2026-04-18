@@ -40,28 +40,23 @@ public class JdbcUmsRepository implements UmsRepository {
         byte[] roleIdBytes = rs.getBytes("role_id");
         if (roleIdBytes != null) {
             Roles role = new Roles(
-                DaoHelper.bytesArrayToUuid(roleIdBytes),
-                rs.getString("role_name"),
-                rs.getString("role_desc")
-            );
+                    DaoHelper.bytesArrayToUuid(roleIdBytes),
+                    rs.getString("role_name"),
+                    rs.getString("role_desc"));
             user.addRole(role);
         }
         return user;
     };
 
-    private static final RowMapper<Roles> ROLE_ROW_MAPPER = (rs, rowNum) ->
-        new Roles(
+    private static final RowMapper<Roles> ROLE_ROW_MAPPER = (rs, rowNum) -> new Roles(
             DaoHelper.bytesArrayToUuid(rs.getBytes("id")),
             rs.getString("name"),
-            rs.getString("description")
-        );
+            rs.getString("description"));
 
-    private static final RowMapper<LastSession> SESSION_ROW_MAPPER = (rs, rowNum) ->
-        new LastSession(
+    private static final RowMapper<LastSession> SESSION_ROW_MAPPER = (rs, rowNum) -> new LastSession(
             DaoHelper.bytesArrayToUuid(rs.getBytes("id")),
-            rs.getObject("logged_in_at",  java.time.LocalDateTime.class),
-            rs.getObject("logged_out_at", java.time.LocalDateTime.class)
-        );
+            rs.getObject("logged_in_at", java.time.LocalDateTime.class),
+            rs.getObject("logged_out_at", java.time.LocalDateTime.class));
 
     // ----------------------------------------------------------------
     // Users
@@ -80,7 +75,7 @@ public class JdbcUmsRepository implements UmsRepository {
                 USER_ROW_MAPPER, userId.toString());
 
         if (rows.isEmpty()) {
-            return new User();          // empty sentinel — id will be null
+            return new User(); // empty sentinel — id will be null
         }
 
         // Merge multi-role rows into one User
@@ -108,11 +103,10 @@ public class JdbcUmsRepository implements UmsRepository {
 
         try {
             jdbc.update(Constants.CREATE_USER,
-                userId.toString(),
-                user.getName(),
-                user.getEmail(),
-                user.getPasswordHash()
-            );
+                    userId.toString(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getPasswordHash());
 
             for (Roles role : user.getRoles()) {
                 Roles canonical = roleMap.get(role.getRole().toUpperCase());
@@ -121,9 +115,8 @@ public class JdbcUmsRepository implements UmsRepository {
                     continue;
                 }
                 jdbc.update(Constants.ASSIGN_ROLE,
-                    userId.toString(),
-                    canonical.getRoleId().toString()
-                );
+                        userId.toString(),
+                        canonical.getRoleId().toString());
             }
         } catch (Exception e) {
             // Likely a duplicate e-mail — caller gets null as "failed" signal
@@ -135,11 +128,10 @@ public class JdbcUmsRepository implements UmsRepository {
     @Override
     public int updateUser(User user) {
         int rows = jdbc.update(Constants.UPDATE_USER,
-            user.getName(),
-            user.getEmail(),
-            user.getPasswordHash(),
-            user.getId().toString()
-        );
+                user.getName(),
+                user.getEmail(),
+                user.getPasswordHash(),
+                user.getId().toString());
 
         // Re-sync roles: remove all then re-assign
         if (rows == 1 && user.getRoles() != null) {
@@ -149,9 +141,8 @@ public class JdbcUmsRepository implements UmsRepository {
                 Roles canonical = roleMap.get(role.getRole().toUpperCase());
                 if (canonical != null) {
                     jdbc.update(Constants.ASSIGN_ROLE,
-                        user.getId().toString(),
-                        canonical.getRoleId().toString()
-                    );
+                            user.getId().toString(),
+                            canonical.getRoleId().toString());
                 }
             }
         }
@@ -172,8 +163,26 @@ public class JdbcUmsRepository implements UmsRepository {
     public Map<String, Roles> findAllRoles() {
         Map<String, Roles> result = new HashMap<>();
         jdbc.query(Constants.GET_ALL_ROLES, ROLE_ROW_MAPPER)
-            .forEach(r -> result.put(r.getRole(), r));
+                .forEach(r -> result.put(r.getRole(), r));
         return result;
+    }
+
+    @Override
+    public boolean roleExists(UUID roleId) {
+        Integer count = jdbc.queryForObject(
+                Constants.GET_ROLE_BY_ID,
+                Integer.class,
+                roleId.toString());
+        return count != null && count > 0;
+    }
+
+    @Override
+    public void assignRole(UUID userId, UUID roleId) {
+        // INSERT IGNORE means a duplicate pair is silently skipped — no exception
+        // thrown
+        jdbc.update(Constants.ASSIGN_ROLE_BY_ID,
+                userId.toString(),
+                roleId.toString());
     }
 
     // ----------------------------------------------------------------
@@ -185,9 +194,8 @@ public class JdbcUmsRepository implements UmsRepository {
         UUID sessionId = UUID.randomUUID();
         try {
             jdbc.update(Constants.CREATE_SESSION,
-                sessionId.toString(),
-                userId.toString()
-            );
+                    sessionId.toString(),
+                    userId.toString());
         } catch (Exception e) {
             return null;
         }
@@ -202,10 +210,9 @@ public class JdbcUmsRepository implements UmsRepository {
     @Override
     public LastSession findLastSessionForUser(UUID userId) {
         List<LastSession> sessions = jdbc.query(
-            Constants.GET_LAST_SESSION_FOR_USER,
-            SESSION_ROW_MAPPER,
-            userId.toString()
-        );
+                Constants.GET_LAST_SESSION_FOR_USER,
+                SESSION_ROW_MAPPER,
+                userId.toString());
         return sessions.isEmpty() ? null : sessions.get(0);
     }
 
