@@ -1,6 +1,50 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Syne:wght@700;800&display=swap');
 
+/* ── Light mode (default) ─────────────────────────────────────────────── */
 :root {
+  --bg-primary:    #f0f4f8;
+  --bg-secondary:  #ffffff;
+  --bg-hover:      #e8edf2;
+  --bg-card:       #ffffff;
+  --bg-input:      #e8edf2;
+  --bg-modal:      #ffffff;
+
+  --border:        #d0d7de;
+  --border-light:  #e5eaef;
+
+  --accent:        #1d9bf0;
+  --accent-hover:  #1a8cd8;
+  --accent-dim:    rgba(29,155,240,0.1);
+  --accent-dim2:   rgba(29,155,240,0.2);
+
+  --text-primary:  #0f1419;
+  --text-secondary:#536471;
+  --text-muted:    #8b98a5;
+
+  --danger:        #f4212e;
+  --danger-dim:    rgba(244,33,46,0.1);
+  --success:       #00ba7c;
+  --like:          #f91880;
+  --like-dim:      rgba(249,24,128,0.1);
+  --repost:        #00ba7c;
+  --repost-dim:    rgba(0,186,124,0.1);
+
+  --header-bg:     rgba(240, 244, 248, 0.85);
+
+  --font-ui:       'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display:  sans-serif;
+
+  --radius-sm:     4px;
+  --radius-md:     8px;
+  --radius-lg:     16px;
+  --radius-full:   9999px;
+
+  --sidebar-w:     275px;
+  --right-w:       348px;
+}
+
+/* ── Dark mode ────────────────────────────────────────────────────────── */
+[data-theme="dark"] {
   --bg-primary:    #031a25;
   --bg-secondary:  #0d1117;
   --bg-hover:      #080808;
@@ -28,16 +72,7 @@
   --repost:        #00ba7c;
   --repost-dim:    rgba(0,186,124,0.1);
 
-  --font-ui:       'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display:  sans-serif;
-
-  --radius-sm:     4px;
-  --radius-md:     8px;
-  --radius-lg:     16px;
-  --radius-full:   9999px;
-
-  --sidebar-w:     275px;
-  --right-w:       348px;
+  --header-bg:     rgba(3, 26, 37, 0.85);
 }
 
 *, *::before, *::after {
@@ -57,6 +92,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 a {
